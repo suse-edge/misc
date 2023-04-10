@@ -1,0 +1,3 @@
+#!/bin/bash
+
+echo "Hi from combustion" > /root/hi.txt
