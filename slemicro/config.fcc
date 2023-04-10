@@ -1,7 +1,13 @@
 variant: fcos
-version: 1.0.0
+version: 1.4.0
+storage:
+  files:
+    - path: /etc/hostname
+      mode: 0644
+      overwrite: true
+      contents:
+        inline: "slemicro"
 passwd:
   users:
    - name: root
-     password_hash: "$6$PfKm6Fv5WbqOvZ0C$g4kByYM.D2B5GCsgluuqDNL87oeXiHqctr6INNNmF75WPGgkLn9O9uVx4iEe3UdbbhaHbTJ1vpZymKWuDIrWI1"
-
+     password_hash: "$2a$10$J1eMqvKBolJ1PtTd1oKkgO48yG6soUYaJG.IGP2ZmA6OKB.NBm1FW"

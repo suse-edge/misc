@@ -13,7 +13,7 @@ cp script ${TMPDIR}/combustion/script
 butane -p -o ${TMPDIR}/ignition/config.ign config.fcc
 
 # Create an iso
-mkisofs -full-iso9660-filenames -o combustion.iso -V combustion ${TMPDIR}
+mkisofs -full-iso9660-filenames -o ignition-and-combustion.iso -V ignition ${TMPDIR}
 
 # Remove leftovers
 rm -Rf ${TMPDIR}
