@@ -10,4 +10,4 @@ storage:
 passwd:
   users:
    - name: root
-     password_hash: "$2a$10$J1eMqvKBolJ1PtTd1oKkgO48yG6soUYaJG.IGP2ZmA6OKB.NBm1FW"
+     password_hash: "$y$j9T$/t4THH10B7esLiIVBROsE.$G1lyxfy/MoFVOrfXSnWAUq70Tf3mjfZBIe18koGOuXB"
