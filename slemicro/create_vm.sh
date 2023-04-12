@@ -60,7 +60,7 @@ if [ -f ${BASEDIR}/combustion/script ]; then
 fi
 
 # Create an iso
-mkisofs -quiet -full-iso9660-filenames -o ${VMFOLDER}/ignition-and-combustion.iso -V ignition ${TMPDIR}
+mkisofs -quiet -full-iso9660-filenames -o ${VMFOLDER}/ignition-and-combustion-${VMNAME}.iso -V ignition ${TMPDIR}
 
 # Remove leftovers
 rm -Rf ${TMPDIR}
@@ -70,7 +70,7 @@ OUTPUT=$(
 osascript <<END
 tell application "UTM"
 	--- specify a boot ISO
-	set iso to POSIX file "${VMFOLDER}/ignition-and-combustion.iso"
+	set iso to POSIX file "${VMFOLDER}/ignition-and-combustion-${VMNAME}.iso"
 	-- specify the RAW file
 	set rawfile to POSIX file "${VMFOLDER}/${VMNAME}.raw"
 	--- create a new QEMU VM 
