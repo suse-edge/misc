@@ -20,6 +20,7 @@ UTMVERSION=$(/usr/libexec/plistbuddy -c Print:CFBundleShortVersionString: /Appli
 # Check if the commands required exist
 command -v butane > /dev/null 2>&1 || die "butane not found" 2
 command -v mkisofs > /dev/null 2>&1 || die "mkisofs not found" 2
+command -v qemu-img > /dev/null 2>&1 || die "qemu-img not found" 2
 
 # Check if the SLEMicro image exist
 [ -f ${SLEMICROFILE} ] || die "SLE Micro image file not found" 2
@@ -27,6 +28,7 @@ command -v mkisofs > /dev/null 2>&1 || die "mkisofs not found" 2
 # Create the image file
 mkdir -p ${VMFOLDER}
 cp ${SLEMICROFILE} ${VMFOLDER}/${VMNAME}.raw
+qemu-img resize -f raw ${VMFOLDER}/${VMNAME}.raw ${DISKSIZE}G > /dev/null
 
 # Check if REGISTER is enabled or not
 if [ "${REGISTER}" == true ]; then

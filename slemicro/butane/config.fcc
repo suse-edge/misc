@@ -1,12 +1,5 @@
 variant: fcos
 version: 1.4.0
-storage:
-  files:
-    - path: /etc/hostname
-      mode: 0644
-      overwrite: true
-      contents:
-        inline: "slemicro"
 passwd:
   users:
    - name: root
