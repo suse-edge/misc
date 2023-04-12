@@ -12,6 +12,11 @@ source ${BASEDIR}/.env
 
 VMFOLDER="${VMFOLDER:-~/VMs}"
 
+# Check if UTM version is 4.2.2 (required for the scripting part)
+ver(){ printf "%03d%03d%03d%03d" $(echo "$1" | tr '.' ' '); }
+UTMVERSION=$(/usr/libexec/plistbuddy -c Print:CFBundleShortVersionString: /Applications/UTM.app/Contents/info.plist)
+[ $(ver ${UTMVERSION}) -lt $(ver 4.2.2) ] && die "UTM version >= 4.2.2 required" 2
+
 # Check if the commands required exist
 command -v butane > /dev/null 2>&1 || die "butane not found" 2
 command -v mkisofs > /dev/null 2>&1 || die "mkisofs not found" 2
