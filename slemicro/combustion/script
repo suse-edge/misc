@@ -1,0 +1,16 @@
+#!/bin/bash
+# combustion: network
+
+# Redirect output to the console
+exec > >(exec tee -a /dev/tty0) 2>&1
+
+# Registration
+if [ ${REGISTER} = true ]; then
+    if ! which SUSEConnect > /dev/null 2>&1; then
+        zypper --non-interactive install suseconnect-ng
+    fi
+    SUSEConnect --email ${EMAIL} --url https://scc.suse.com --regcode ${REGCODE}
+fi
+
+# Leave a marker
+echo "Configured with combustion" > /etc/issue.d/combustion
