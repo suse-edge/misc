@@ -6,20 +6,21 @@ exec > >(exec tee -a /dev/tty0) 2>&1
 
 # Registration
 if [ ${REGISTER} = true ]; then
-    if ! which SUSEConnect > /dev/null 2>&1; then
-        zypper --non-interactive install suseconnect-ng
-    fi
-    SUSEConnect --email ${EMAIL} --url https://scc.suse.com --regcode ${REGCODE}
+	if ! which SUSEConnect > /dev/null 2>&1; then
+		zypper --non-interactive install suseconnect-ng
+	fi
+	SUSEConnect --email ${EMAIL} --url https://scc.suse.com --regcode ${REGCODE}
 fi
 	
 # Set hostname
 echo ${VMNAME} > /etc/hostname
+hostnamectl hostname ${VMNAME}
 
 # K3s
 if [ ${K3S} = true ]; then
-    # Stolen from https://code.opensuse.org/adathor/combustion-dotconf/blob/main/f/K3s%20cluster/k3s_master/script
-    INSTALL_K3S_EXEC='server --cluster-init --write-kubeconfig-mode=644'
-    # Download and install the latest k3s installer (it seems /usr/local/bin/ doesn't exist at this stage)
+	# Stolen from https://code.opensuse.org/adathor/combustion-dotconf/blob/main/f/K3s%20cluster/k3s_master/script
+	INSTALL_K3S_EXEC='server --cluster-init --write-kubeconfig-mode=644'
+	# Download and install the latest k3s installer (it seems /usr/local/bin/ doesn't exist at this stage)
 	curl -L --output k3s_installer.sh https://get.k3s.io && install -m755 k3s_installer.sh /usr/bin/
 	# Create a systemd unit that installs k3s if not installed yet. The k3s service is started after the installation
 	cat <<- EOF > /etc/systemd/system/install-k3s.service
@@ -36,12 +37,12 @@ if [ ${K3S} = true ]; then
 	ExecStart=/usr/bin/k3s_installer.sh
 	RemainAfterExit=yes
 	KillMode=process
-    ExecStartPost=/bin/sh -c "systemctl start k3s"
+	ExecStartPost=/bin/sh -c "systemctl start k3s"
 	[Install]
 	WantedBy=multi-user.target
 	EOF
 
-    systemctl enable install-k3s.service
+	systemctl enable install-k3s.service
 fi
 
 # Leave a marker
