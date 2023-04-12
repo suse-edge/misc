@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -xeuo pipefail
+set -euo pipefail
 BASEDIR="$(dirname "$0")"
 
 die(){
@@ -55,7 +55,7 @@ if [ -f ${BASEDIR}/combustion/script ]; then
 fi
 
 # Create an iso
-mkisofs -full-iso9660-filenames -o ${VMFOLDER}/ignition-and-combustion.iso -V ignition ${TMPDIR}
+mkisofs -quiet -full-iso9660-filenames -o ${VMFOLDER}/ignition-and-combustion.iso -V ignition ${TMPDIR}
 
 # Remove leftovers
 rm -Rf ${TMPDIR}
@@ -79,7 +79,6 @@ end tell
 END
 )
 
-echo "VM started. You can connect to the serial terminal as:"
-echo "screen ${OUTPUT}"
+echo "VM started. You can connect to the serial terminal as: screen ${OUTPUT}"
 
 exit 0
