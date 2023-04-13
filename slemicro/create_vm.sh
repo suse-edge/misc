@@ -98,13 +98,13 @@ end tell
 END
 )
 
-VMMAC=$(echo $OUTPUT | sed 's/^0*//')
+VMMAC=$(echo $OUTPUT | sed 's/0\([0-9A-Fa-f]\)/\1/g')
 
 timeout=180
 count=0
 
 echo -n "Waiting for IP: "
-until grep -q -i "${VMMAC}" -B1 -m1 /var/db/dhcpd_leases | head -1 | awk -F= '{ print $2 }' | sed 's/0\([0-9A-Fa-f]\)/\1/g'; do
+until grep -q -i "${VMMAC}" -B1 -m1 /var/db/dhcpd_leases | head -1 | awk -F= '{ print $2 }'; do
     count=$((count + 1))
     if [[ ${count} -ge ${timeout} ]]; then
         break
@@ -115,6 +115,6 @@ done
 
 echo ""
 
-echo "VM IP: $(grep -i "${VMMAC}" -B1 -m1 /var/db/dhcpd_leases | head -1 | awk -F= '{ print $2 }' | sed 's/0\([0-9A-Fa-f]\)/\1/g')"
+echo "VM IP: $(grep -i "${VMMAC}" -B1 -m1 /var/db/dhcpd_leases | head -1 | awk -F= '{ print $2 }')"
 
 exit 0
