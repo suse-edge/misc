@@ -112,9 +112,10 @@ until grep -q -i "${VMMAC}" -B1 -m1 /var/db/dhcpd_leases | head -1 | awk -F= '{ 
     sleep 1
     echo -n "."
 done
+VMIP=$(grep -i "${VMMAC}" -B1 -m1 /var/db/dhcpd_leases | head -1 | awk -F= '{ print $2 }')
 
-echo ""
+printf "\nVM IP: ${VMIP}\n"
 
-echo "VM IP: $(grep -i "${VMMAC}" -B1 -m1 /var/db/dhcpd_leases | head -1 | awk -F= '{ print $2 }')"
+[ ${RANCHER} = true ] && echo "After Rancher is installed, you can access the Web UI as https://${VMIP}.sslip.io"
 
 exit 0
