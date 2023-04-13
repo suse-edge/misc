@@ -75,7 +75,7 @@ if [ ${RANCHER} = true ]; then
   	--namespace cattle-system \
 		--create-namespace \
   	--set hostname=$(hostname -I | awk '{print $1}').sslip.io \
-  	--set bootstrapPassword=admin \
+  	--set bootstrapPassword=${RANCHERBOOTSTRAPPASSWORD} \
 		--set replicas=1 \
 		--set global.cattle.psp.enabled=false
 
