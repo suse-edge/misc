@@ -6,7 +6,7 @@ exec > >(exec tee -a /dev/tty0) 2>&1
 
 # Set hostname
 echo ${VMNAME} > /etc/hostname
-hostnamectl set-hostname ${VMNAME}
+hostname ${VMNAME}
 
 # Registration
 if [ ${REGISTER} = true ]; then
