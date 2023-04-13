@@ -4,6 +4,10 @@
 # Redirect output to the console
 exec > >(exec tee -a /dev/tty0) 2>&1
 
+# Set hostname
+echo ${VMNAME} > /etc/hostname
+hostnamectl set-hostname ${VMNAME}
+
 # Registration
 if [ ${REGISTER} = true ]; then
 	if ! which SUSEConnect > /dev/null 2>&1; then
@@ -11,10 +15,6 @@ if [ ${REGISTER} = true ]; then
 	fi
 	SUSEConnect --email ${EMAIL} --url https://scc.suse.com --regcode ${REGCODE}
 fi
-	
-# Set hostname
-echo ${VMNAME} > /etc/hostname
-hostnamectl set-hostname ${VMNAME}
 
 # K3s
 if [ ${K3S} = true ]; then
@@ -30,6 +30,7 @@ if [ ${K3S} = true ]; then
 	After=network.target network-online.target
 	ConditionPathExists=/usr/bin/k3s_installer.sh
 	ConditionPathExists=!/usr/local/bin/k3s
+
 	[Service]
 	Type=forking
 	TimeoutStartSec=120
@@ -39,6 +40,7 @@ if [ ${K3S} = true ]; then
 	RemainAfterExit=yes
 	KillMode=process
 	ExecStartPost=/bin/sh -c "systemctl start k3s"
+	
 	[Install]
 	WantedBy=multi-user.target
 	EOF
@@ -49,13 +51,17 @@ fi
 
 # Rancher
 if [ ${RANCHER} = true ]; then
+	# Download helm as required to install rancher (it seems /usr/local/bin/ doesn't exist at this stage)
 	export HELM_INSTALL_DIR="/usr/bin/" && curl -fsSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 |bash
 
+	# Create a script to install rancher that will be called via a systemd service
 	cat <<- EOF > /usr/bin/rancher_installer.sh
 	#!/bin/bash
 
+	# Wait for k3s to be available
 	until [ -f /etc/rancher/k3s/k3s.yaml ]; do sleep 2; done
 	export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+	# Wait for the node to be available, meaning the K8s API is available
 	while ! kubectl wait --for condition=ready node $(cat /etc/hostname | tr '[:upper:]' '[:lower:]') --timeout=60s; do sleep 2 ; done
 
 	# https://ranchermanager.docs.rancher.com/pages-for-subheaders/install-upgrade-on-a-kubernetes-cluster
@@ -71,6 +77,7 @@ if [ ${RANCHER} = true ]; then
 		--set installCRDs=true \
 	  --version v1.11.0
 	
+	# Install rancher using sslip.io as hostname and with just a single replica
 	helm install rancher rancher-latest/rancher \
   	--namespace cattle-system \
 		--create-namespace \
@@ -79,11 +86,14 @@ if [ ${RANCHER} = true ]; then
 		--set replicas=1 \
 		--set global.cattle.psp.enabled=false
 
+	# By creating this file, the install-rancher systemd service won't be executed again
 	touch /root/.rancher_installed
 	EOF
 
 	chmod a+x /usr/bin/rancher_installer.sh
 
+	# Create a systemd unit to install rancher once
+	# Using "User=root" is required for some environment variables to be present 
 	cat <<- EOF > /etc/systemd/system/install-rancher.service
 	[Unit]
 	Description=Deploy Rancher on K3s
@@ -91,6 +101,7 @@ if [ ${RANCHER} = true ]; then
 	After=network.target network-online.target k3s.service
 	ConditionPathExists=/usr/bin/rancher_installer.sh
 	ConditionPathExists=!/root/.rancher_installed
+
 	[Service]
 	User=root
 	Type=forking
@@ -98,6 +109,7 @@ if [ ${RANCHER} = true ]; then
 	ExecStart=/usr/bin/rancher_installer.sh
 	RemainAfterExit=yes
 	KillMode=process
+
 	[Install]
 	WantedBy=multi-user.target
 	EOF
