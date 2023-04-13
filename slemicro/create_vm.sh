@@ -88,4 +88,33 @@ END
 
 echo "VM started. You can connect to the serial terminal as: screen ${OUTPUT}"
 
+OUTPUT=$(
+osascript <<END
+tell application "UTM"
+  set vm to virtual machine named "${VMNAME}"
+	set config to configuration of vm
+	get address of item 1 of network interfaces of config
+end tell
+END
+)
+
+VMMAC=$(echo $OUTPUT | sed 's/^0*//')
+
+timeout=180
+count=0
+
+echo -n "Waiting for IP: "
+until grep -q -i "${VMMAC}" -B1 -m1 /var/db/dhcpd_leases | head -1 | awk -F= '{ print $2 }' | sed 's/0\([0-9A-Fa-f]\)/\1/g'; do
+    count=$((count + 1))
+    if [[ ${count} -ge ${timeout} ]]; then
+        break
+    fi
+    sleep 1
+    echo -n "."
+done
+
+echo ""
+
+echo "VM IP: $(grep -i "${VMMAC}" -B1 -m1 /var/db/dhcpd_leases | head -1 | awk -F= '{ print $2 }' | sed 's/0\([0-9A-Fa-f]\)/\1/g')"
+
 exit 0
