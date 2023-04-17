@@ -79,6 +79,10 @@ export RANCHER=true
 export RANCHERBOOTSTRAPPASSWORD="admin"
 # Enable cockpit
 export COCKPIT=true
+# Enable podman
+export PODMAN=true
+# Update to latest packages
+export UPDATE=true
 EOF
 ```
 

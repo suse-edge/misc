@@ -57,15 +57,13 @@ fi
 
 # If the combustion script exists
 if [ -f ${BASEDIR}/combustion/script ]; then
-	# Copy it to the final iso destination parsing the vars
-	envsubst < ${BASEDIR}/combustion/script > ${TMPDIR}/combustion/script
 	# If a SSH key has been set, copy it as well
 	if [ ! -z "${SSHPUB}" ] && [ -f "${SSHPUB}" ]; then
-		cat <<-EOF >> ${TMPDIR}/combustion/script
-		mkdir -pm700 /root/.ssh/
-		echo $(cat ${SSHPUB}) >> /root/.ssh/authorized_keys
-		EOF
+		export SSHCONFIG=true
+		export SSHCONTENT=$(cat ${SSHPUB})
 	fi
+	# Copy it to the final iso destination parsing the vars
+	envsubst < ${BASEDIR}/combustion/script > ${TMPDIR}/combustion/script
 fi
 
 # Create an iso

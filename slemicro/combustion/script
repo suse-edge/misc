@@ -5,36 +5,48 @@
 exec > >(exec tee -a /dev/tty0) 2>&1
 
 # Set hostname
-echo ${VMNAME} > /etc/hostname
-hostname ${VMNAME}
+echo "${VMNAME}" > /etc/hostname
+hostname "${VMNAME}"
+
+# SSH key management
+if [ "${SSHCONFIG}" = true ]; then
+	mkdir -pm700 /root/.ssh/
+	echo "${SSHCONTENT}" >> /root/.ssh/authorized_keys
+fi
 
 # Registration
-if [ ${REGISTER} = true ]; then
+if [ "${REGISTER}" = true ]; then
 	if ! which SUSEConnect > /dev/null 2>&1; then
 		zypper --non-interactive install suseconnect-ng
 	fi
-	SUSEConnect --email ${EMAIL} --url https://scc.suse.com --regcode ${REGCODE}
+	SUSEConnect --email "${EMAIL}" --url https://scc.suse.com --regcode "${REGCODE}"
 fi
 
 # Cockpit
-if [ ${COCKPIT} = true ]; then
-	zypper --non-interactive install pattern microos-cockpit
-	systemctl enable --now cockpit.socket
+if [ "${COCKPIT}" = true ]; then
+	systemctl enable cockpit.socket
+fi
+
+# Podman
+if [ "${PODMAN}" = true ]; then
+	systemctl enable podman.service podman.socket
 fi
 
 # K3s
-if [ ${K3S} = true ]; then
+if [ "${K3S}" = true ]; then
+	# Mount /usr/local to store the k3s script
+	mount /usr/local || true
 	# Stolen from https://code.opensuse.org/adathor/combustion-dotconf/blob/main/f/K3s%20cluster/k3s_master/script
 	INSTALL_K3S_EXEC='server --cluster-init --write-kubeconfig-mode=644'
-	# Download and install the latest k3s installer (it seems /usr/local/bin/ doesn't exist at this stage)
-	curl -L --output k3s_installer.sh https://get.k3s.io && install -m755 k3s_installer.sh /usr/bin/
+	# Download and install the latest k3s installer
+	curl -L --output k3s_installer.sh https://get.k3s.io && install -m755 k3s_installer.sh /usr/local/bin/
 	# Create a systemd unit that installs k3s if not installed yet. The k3s service is started after the installation
 	cat <<- EOF > /etc/systemd/system/install-k3s.service
 	[Unit]
 	Description=Run K3s installer
 	Wants=network-online.target
 	After=network.target network-online.target
-	ConditionPathExists=/usr/bin/k3s_installer.sh
+	ConditionPathExists=/usr/local/bin/k3s_installer.sh
 	ConditionPathExists=!/usr/local/bin/k3s
 
 	[Service]
@@ -42,7 +54,7 @@ if [ ${K3S} = true ]; then
 	TimeoutStartSec=120
 	Environment="INSTALL_K3S_EXEC=$INSTALL_K3S_EXEC"
 	Environment="INSTALL_K3S_VERSION=${K3s_VERSION}"
-	ExecStart=/usr/bin/k3s_installer.sh
+	ExecStart=/usr/local/bin/k3s_installer.sh
 	RemainAfterExit=yes
 	KillMode=process
 	ExecStartPost=/bin/sh -c "systemctl start k3s"
@@ -56,12 +68,15 @@ if [ ${K3S} = true ]; then
 fi
 
 # Rancher
-if [ ${RANCHER} = true ]; then
-	# Download helm as required to install rancher (it seems /usr/local/bin/ doesn't exist at this stage)
-	export HELM_INSTALL_DIR="/usr/bin/" && curl -fsSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 |bash
+if [ "${RANCHER}" = true ]; then
+	# Mount /usr/local to store the rancher install script
+	mount /usr/local || true
+
+	# Download helm as required to install rancher
+	curl -fsSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 |bash
 
 	# Create a script to install rancher that will be called via a systemd service
-	cat <<- EOF > /usr/bin/rancher_installer.sh
+	cat <<- EOF > /usr/local/bin/rancher_installer.sh
 	#!/bin/bash
 
 	# Wait for k3s to be available
@@ -96,7 +111,7 @@ if [ ${RANCHER} = true ]; then
 	touch /root/.rancher_installed
 	EOF
 
-	chmod a+x /usr/bin/rancher_installer.sh
+	chmod a+x /usr/local/bin/rancher_installer.sh
 
 	# Create a systemd unit to install rancher once
 	# Using "User=root" is required for some environment variables to be present 
@@ -105,14 +120,14 @@ if [ ${RANCHER} = true ]; then
 	Description=Deploy Rancher on K3s
 	Wants=network-online.target
 	After=network.target network-online.target k3s.service
-	ConditionPathExists=/usr/bin/rancher_installer.sh
+	ConditionPathExists=/usr/local/bin/rancher_installer.sh
 	ConditionPathExists=!/root/.rancher_installed
 
 	[Service]
 	User=root
 	Type=forking
 	TimeoutStartSec=120
-	ExecStart=/usr/bin/rancher_installer.sh
+	ExecStart=/usr/local/bin/rancher_installer.sh
 	RemainAfterExit=yes
 	KillMode=process
 
@@ -125,3 +140,7 @@ fi
 
 # Leave a marker
 echo "Configured with combustion" >> /etc/issue.d/combustion
+
+if [ "${UPDATE}" = true ]; then
+	zypper --non-interactive dup
+fi
