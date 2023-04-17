@@ -77,6 +77,8 @@ export K3s_VERSION="v1.25.8+k3s1"
 export RANCHER=true
 # Initial Rancher bootstrap password
 export RANCHERBOOTSTRAPPASSWORD="admin"
+# Enable cockpit
+export COCKPIT=true
 EOF
 ```
 

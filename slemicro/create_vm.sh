@@ -123,6 +123,7 @@ VMIP=$(grep -i "${VMMAC}" -B1 -m1 /var/db/dhcpd_leases | head -1 | awk -F= '{ pr
 
 printf "\nVM IP: ${VMIP}\n"
 
+[ ${COCKPIT} = true ] && echo "Cockpit Web UI available at https://${VMIP}.sslip.io:9090"
 [ ${RANCHER} = true ] && echo "After Rancher is installed, you can access the Web UI as https://${VMIP}.sslip.io"
 
 exit 0

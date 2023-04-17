@@ -16,6 +16,12 @@ if [ ${REGISTER} = true ]; then
 	SUSEConnect --email ${EMAIL} --url https://scc.suse.com --regcode ${REGCODE}
 fi
 
+# Cockpit
+if [ ${COCKPIT} = true ]; then
+	zypper --non-interactive install pattern microos-cockpit
+	systemctl enable --now cockpit.socket
+fi
+
 # K3s
 if [ ${K3S} = true ]; then
 	# Stolen from https://code.opensuse.org/adathor/combustion-dotconf/blob/main/f/K3s%20cluster/k3s_master/script
