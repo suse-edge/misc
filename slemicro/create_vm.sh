@@ -3,8 +3,8 @@ set -euo pipefail
 BASEDIR="$(dirname "$0")"
 
 die(){
-  echo ${1}
-  exit ${2}
+	echo ${1}
+	exit ${2}
 }
 
 # Get the env file
@@ -32,9 +32,9 @@ qemu-img resize -f raw ${VMFOLDER}/${VMNAME}.raw ${DISKSIZE}G > /dev/null
 
 # Check if REGISTER is enabled or not
 if [ "${REGISTER}" == true ]; then
-  # Check if EMAIL and REGCODE variables are empty
-  [ -z "${EMAIL}" ] && die "EMAIL variable not found" 2
-  [ -z "${REGCODE}" ] && die "REGCODE variable not found" 2
+	# Check if EMAIL and REGCODE variables are empty
+	[ -z "${EMAIL}" ] && die "EMAIL variable not found" 2
+	[ -z "${REGCODE}" ] && die "REGCODE variable not found" 2
 fi
 
 # Create a temp dir to host the assets
@@ -45,20 +45,27 @@ mkdir -p ${TMPDIR}/{combustion,ignition}
 
 # If the butane file exists
 if [ -f ${BASEDIR}/butane/config.fcc ]; then
-  # Convert the config.fcc yaml file to ignition
-  butane -p -o ${TMPDIR}/ignition/config.ign ${BASEDIR}/butane/config.fcc
+	# Convert the config.fcc yaml file to ignition
+	butane -p -o ${TMPDIR}/ignition/config.ign ${BASEDIR}/butane/config.fcc
 fi
 
 # If the ignition file exists
 if [ -f ${BASEDIR}/ignition/config.ign ]; then
-  # Copy it to the final iso destination
-  cp ${BASEDIR}/ignition/config.ign ${TMPDIR}/ignition/config.ign
+	# Copy it to the final iso destination
+	cp ${BASEDIR}/ignition/config.ign ${TMPDIR}/ignition/config.ign
 fi
 
 # If the combustion script exists
 if [ -f ${BASEDIR}/combustion/script ]; then
-  # Copy it to the final iso destination parsing the vars
-  envsubst < ${BASEDIR}/combustion/script > ${TMPDIR}/combustion/script
+	# Copy it to the final iso destination parsing the vars
+	envsubst < ${BASEDIR}/combustion/script > ${TMPDIR}/combustion/script
+	# If a SSH key has been set, copy it as well
+	if [ ! -z "${SSHPUB}" ] && [ -f "${SSHPUB}" ]; then
+		cat <<-EOF >> ${TMPDIR}/combustion/script
+		mkdir -pm700 /root/.ssh/
+		echo $(cat ${SSHPUB}) >> /root/.ssh/authorized_keys
+		EOF
+	fi
 fi
 
 # Create an iso
@@ -79,8 +86,8 @@ tell application "UTM"
 	set vm to make new virtual machine with properties {backend:qemu, configuration:{cpu cores:${CPUS}, memory: ${MEMORY}, name:"${VMNAME}", architecture:"aarch64", drives:{{removable:true, source:iso}, {removable:false, source:rawfile}}}}
 	start vm
 	repeat
-	  if status of vm is started then exit repeat
-  end repeat
+		if status of vm is started then exit repeat
+	end repeat
 	get address of first serial port of vm
 end tell
 END
@@ -91,7 +98,7 @@ echo "VM started. You can connect to the serial terminal as: screen ${OUTPUT}"
 OUTPUT=$(
 osascript <<END
 tell application "UTM"
-  set vm to virtual machine named "${VMNAME}"
+	set vm to virtual machine named "${VMNAME}"
 	set config to configuration of vm
 	get address of item 1 of network interfaces of config
 end tell
@@ -105,12 +112,12 @@ count=0
 
 echo -n "Waiting for IP: "
 until grep -q -i "${VMMAC}" -B1 -m1 /var/db/dhcpd_leases | head -1 | awk -F= '{ print $2 }'; do
-    count=$((count + 1))
-    if [[ ${count} -ge ${timeout} ]]; then
-        break
-    fi
-    sleep 1
-    echo -n "."
+	count=$((count + 1))
+	if [[ ${count} -ge ${timeout} ]]; then
+		break
+	fi
+	sleep 1
+	echo -n "."
 done
 VMIP=$(grep -i "${VMMAC}" -B1 -m1 /var/db/dhcpd_leases | head -1 | awk -F= '{ print $2 }')
 
