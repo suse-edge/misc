@@ -153,20 +153,6 @@ if [ "${UPDATEANDREBOOT}" = true ]; then
 	zypper --non-interactive dup
 	zypper needs-rebooting || touch /root/.needsreboot
 	
-	# Create a script to check if reboot was needed
-	cat <<- EOF > /usr/local/bin/reboot-required.sh
-	#!/bin/bash
-
-	if [ -f /root/.needsreboot ]; then
-		rm -f /root/.needsreboot
-		rm -f /etc/systemd/system/reboot-required.service
-		rm -f /usr/local/bin/reboot-required.sh
-		reboot
-	fi
-	EOF
-
-	chmod a+x /usr/local/bin/reboot-required.sh
-
 	# Create a systemd unit to run the service
 	# Using "User=root" is required for some environment variables to be present 
 	cat <<- EOF > /etc/systemd/system/reboot-required.service
@@ -174,13 +160,15 @@ if [ "${UPDATEANDREBOOT}" = true ]; then
 	Description=Reboot if required once
 	Wants=network-online.target
 	After=network.target network-online.target
-	ConditionPathExists=/usr/local/bin/reboot-required.sh
+	ConditionPathExists=/root/.needsreboot
 
 	[Service]
 	User=root
 	Type=forking
 	TimeoutStartSec=120
-	ExecStart=/usr/local/bin/reboot-required.sh
+	ExecStartPre=rm -f /etc/systemd/system/reboot-required.service
+	ExecStartPre=rm -f /root/.needsreboot
+	ExecStart=reboot
 	RemainAfterExit=yes
 	KillMode=process
 
