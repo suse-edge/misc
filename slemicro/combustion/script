@@ -57,7 +57,11 @@ if [ "${K3S}" = true ]; then
 	ExecStart=/usr/local/bin/k3s_installer.sh
 	RemainAfterExit=yes
 	KillMode=process
+	# Disable & delete everything
 	ExecStartPost=/bin/sh -c "systemctl start k3s"
+	ExecStartPost=rm -f /usr/local/bin/k3s_installer.sh
+	ExecStartPost=/bin/sh -c "systemctl disable install-k3s"
+	ExecStartPost=rm -f /etc/systemd/system/install-k3s.service
 	
 	[Install]
 	WantedBy=multi-user.target
@@ -107,8 +111,7 @@ if [ "${RANCHER}" = true ]; then
 		--set replicas=1 \
 		--set global.cattle.psp.enabled=false
 
-	# By creating this file, the install-rancher systemd service won't be executed again
-	touch /root/.rancher_installed
+	rm -f /etc/systemd/system/install-rancher.service
 	EOF
 
 	chmod a+x /usr/local/bin/rancher_installer.sh
@@ -121,7 +124,6 @@ if [ "${RANCHER}" = true ]; then
 	Wants=network-online.target
 	After=network.target network-online.target k3s.service
 	ConditionPathExists=/usr/local/bin/rancher_installer.sh
-	ConditionPathExists=!/root/.rancher_installed
 
 	[Service]
 	User=root
@@ -130,6 +132,10 @@ if [ "${RANCHER}" = true ]; then
 	ExecStart=/usr/local/bin/rancher_installer.sh
 	RemainAfterExit=yes
 	KillMode=process
+	# Disable & delete everything
+	ExecStartPost=rm -f /usr/local/bin/rancher_installer.sh
+	ExecStartPost=/bin/sh -c "systemctl disable install-rancher.service"
+	ExecStartPost=rm -f /etc/systemd/system/install-rancher.service
 
 	[Install]
 	WantedBy=multi-user.target
@@ -141,6 +147,46 @@ fi
 # Leave a marker
 echo "Configured with combustion" >> /etc/issue.d/combustion
 
-if [ "${UPDATE}" = true ]; then
+if [ "${UPDATEANDREBOOT}" = true ]; then
+	# Mount /usr/local to store the reboot script
+	mount /usr/local || true
 	zypper --non-interactive dup
+	zypper needs-rebooting || touch /root/.needsreboot
+	
+	# Create a script to check if reboot was needed
+	cat <<- EOF > /usr/local/bin/reboot-required.sh
+	#!/bin/bash
+
+	if [ -f /root/.needsreboot ]; then
+		rm -f /root/.needsreboot
+		rm -f /etc/systemd/system/reboot-required.service
+		rm -f /usr/local/bin/reboot-required.sh
+		reboot
+	fi
+	EOF
+
+	chmod a+x /usr/local/bin/reboot-required.sh
+
+	# Create a systemd unit to run the service
+	# Using "User=root" is required for some environment variables to be present 
+	cat <<- EOF > /etc/systemd/system/reboot-required.service
+	[Unit]
+	Description=Reboot if required once
+	Wants=network-online.target
+	After=network.target network-online.target
+	ConditionPathExists=/usr/local/bin/reboot-required.sh
+
+	[Service]
+	User=root
+	Type=forking
+	TimeoutStartSec=120
+	ExecStart=/usr/local/bin/reboot-required.sh
+	RemainAfterExit=yes
+	KillMode=process
+
+	[Install]
+	WantedBy=multi-user.target
+	EOF
+
+	systemctl enable reboot-required.service
 fi

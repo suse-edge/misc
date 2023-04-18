@@ -81,8 +81,8 @@ export RANCHERBOOTSTRAPPASSWORD="admin"
 export COCKPIT=true
 # Enable podman
 export PODMAN=true
-# Update to latest packages
-export UPDATE=true
+# Update to latest packages and reboot if needed (zypper needs-reboot)
+export UPDATEANDREBOOT=true
 EOF
 ```
 

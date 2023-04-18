@@ -123,5 +123,6 @@ printf "\nVM IP: ${VMIP}\n"
 
 [ ${COCKPIT} = true ] && echo "Cockpit Web UI available at https://${VMIP}.sslip.io:9090"
 [ ${RANCHER} = true ] && echo "After Rancher is installed, you can access the Web UI as https://${VMIP}.sslip.io"
+[ ${UPDATEANDREBOOT} = true ] && echo "The VM will be updated and rebooted if required, it can take a while"
 
 exit 0
