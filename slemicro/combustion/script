@@ -148,33 +148,26 @@ fi
 echo "Configured with combustion" >> /etc/issue.d/combustion
 
 if [ "${UPDATEANDREBOOT}" = true ]; then
-	# Mount /usr/local to store the reboot script
-	mount /usr/local || true
 	zypper --non-interactive dup
-	zypper needs-rebooting || touch /root/.needsreboot
-	
-	# Create a systemd unit to run the service
-	# Using "User=root" is required for some environment variables to be present 
-	cat <<- EOF > /etc/systemd/system/reboot-required.service
-	[Unit]
-	Description=Reboot if required once
-	Wants=network-online.target
-	After=network.target network-online.target
-	ConditionPathExists=/root/.needsreboot
+	if zypper needs-rebooting ; then
+		cat <<- EOF > /etc/systemd/system/reboot-required.service
+		[Unit]
+		Description=Reboot if required once
+		Wants=network-online.target
+		After=network.target network-online.target
 
-	[Service]
-	User=root
-	Type=forking
-	TimeoutStartSec=120
-	ExecStartPre=rm -f /etc/systemd/system/reboot-required.service
-	ExecStartPre=rm -f /root/.needsreboot
-	ExecStart=reboot
-	RemainAfterExit=yes
-	KillMode=process
+		[Service]
+		User=root
+		Type=forking
+		TimeoutStartSec=120
+		ExecStartPre=rm -f /etc/systemd/system/reboot-required.service
+		ExecStart=reboot
+		RemainAfterExit=yes
+		KillMode=process
 
-	[Install]
-	WantedBy=multi-user.target
-	EOF
-
-	systemctl enable reboot-required.service
+		[Install]
+		WantedBy=multi-user.target
+		EOF
+		systemctl enable reboot-required.service
+	fi
 fi
