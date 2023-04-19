@@ -159,7 +159,8 @@ if [ "${UPDATEANDREBOOT}" = true ]; then
 	ExecStartPost=rm -f /etc/systemd/system/update-and-reboot.service
 	ExecStartPost=reboot
 	RemainAfterExit=yes
-	TimeoutSec=900
+	# Long timeout just in case
+	TimeoutSec=3600
 	[Install]
 	WantedBy=multi-user.target
 	EOF
