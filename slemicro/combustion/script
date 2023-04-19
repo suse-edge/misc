@@ -68,7 +68,6 @@ if [ "${K3S}" = true ]; then
 	EOF
 
 	systemctl enable install-k3s.service
-
 fi
 
 # Rancher
@@ -144,30 +143,28 @@ if [ "${RANCHER}" = true ]; then
 	systemctl enable install-rancher.service
 fi
 
+# Update and reboot as required by transactional-update
+if [ "${UPDATEANDREBOOT}" = true ]; then
+	cat <<- EOF > /etc/systemd/system/update-and-reboot.service
+	[Unit]
+	Description=Reboot if required once
+	Wants=network-online.target
+	After=network.target network-online.target install-rancher.service
+	[Service]
+	User=root
+	# Run this service the last one
+	Type=oneshot
+	ExecStart=transactional-update
+	ExecStartPost=/bin/sh -c "systemctl disable update-and-reboot.service"
+	ExecStartPost=rm -f /etc/systemd/system/update-and-reboot.service
+	ExecStartPost=reboot
+	RemainAfterExit=yes
+	TimeoutSec=900
+	[Install]
+	WantedBy=multi-user.target
+	EOF
+	systemctl enable update-and-reboot.service
+fi
+
 # Leave a marker
 echo "Configured with combustion" >> /etc/issue.d/combustion
-
-if [ "${UPDATEANDREBOOT}" = true ]; then
-	zypper --non-interactive dup
-	if zypper needs-rebooting ; then
-		cat <<- EOF > /etc/systemd/system/reboot-required.service
-		[Unit]
-		Description=Reboot if required once
-		Wants=network-online.target
-		After=network.target network-online.target
-
-		[Service]
-		User=root
-		Type=forking
-		TimeoutStartSec=120
-		ExecStartPre=rm -f /etc/systemd/system/reboot-required.service
-		ExecStart=reboot
-		RemainAfterExit=yes
-		KillMode=process
-
-		[Install]
-		WantedBy=multi-user.target
-		EOF
-		systemctl enable reboot-required.service
-	fi
-fi
