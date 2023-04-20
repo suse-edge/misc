@@ -25,17 +25,27 @@ command -v qemu-img > /dev/null 2>&1 || die "qemu-img not found" 2
 # Check if the SLEMicro image exist
 [ -f ${SLEMICROFILE} ] || die "SLE Micro image file not found" 2
 
-# Create the image file
-mkdir -p ${VMFOLDER}
-cp ${SLEMICROFILE} ${VMFOLDER}/${VMNAME}.raw
-qemu-img resize -f raw ${VMFOLDER}/${VMNAME}.raw ${DISKSIZE}G > /dev/null
-
 # Check if REGISTER is enabled or not
 if [ "${REGISTER}" == true ]; then
 	# Check if EMAIL and REGCODE variables are empty
 	[ -z "${EMAIL}" ] && die "EMAIL variable not found" 2
 	[ -z "${REGCODE}" ] && die "REGCODE variable not found" 2
 fi
+
+# Check if RANCHERFINALPASSWORD exist
+if [ ! -z "${RANCHERFINALPASSWORD}" ]; then
+	if [ ${#RANCHERFINALPASSWORD} -lt 12 ]; then
+		die "RANCHERFINALPASSWORD variable needs to be >12 characters long" 3
+	fi
+	if [ "${REGISTER}" == false ]; then
+		die "RANCHERFINALPASSWORD requires REGISTER" 3
+	fi
+fi
+
+# Create the image file
+mkdir -p ${VMFOLDER}
+cp ${SLEMICROFILE} ${VMFOLDER}/${VMNAME}.raw
+qemu-img resize -f raw ${VMFOLDER}/${VMNAME}.raw ${DISKSIZE}G > /dev/null
 
 # Create a temp dir to host the assets
 TMPDIR=$(mktemp -d)

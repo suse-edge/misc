@@ -21,7 +21,6 @@
   - [Enviroment variables](#enviroment-variables-1)
   - [Usage](#usage-1)
 
-
 ## create_vm.sh
 
 This script creates a SLE Micro aarch64 VM on OSX using UTM and it is customized using ignition/combustion.
@@ -77,6 +76,10 @@ export K3s_VERSION="v1.25.8+k3s1"
 export RANCHER=true
 # Initial Rancher bootstrap password
 export RANCHERBOOTSTRAPPASSWORD="admin"
+# Enable to skip the rancher bootstrap phase
+export RANCHERBOOTSTRAPSKIP="true"
+# Final Rancher password
+export RANCHERFINALPASSWORD="adminadminadmin"
 # Enable cockpit
 export COCKPIT=true
 # Enable podman
