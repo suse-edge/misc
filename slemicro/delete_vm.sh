@@ -17,7 +17,7 @@ OUTPUT=$(
 osascript <<END
 tell application "UTM"
 	set vm to virtual machine named "${VMNAME}"
-	stop vm
+	if status of vm is started then stop vm
 	repeat
 	  if status of vm is stopped then exit repeat
   end repeat
