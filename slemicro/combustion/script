@@ -99,7 +99,7 @@ if [ "${RANCHER}" = true ]; then
 	  --namespace cert-manager \
 	  --create-namespace \
 		--set installCRDs=true \
-	  --version v1.11.0
+	  --version v1.11.1
 	
 	# Install rancher using sslip.io as hostname and with just a single replica
 	helm install rancher rancher-latest/rancher \
