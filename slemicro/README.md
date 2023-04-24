@@ -80,6 +80,8 @@ export RANCHERBOOTSTRAPPASSWORD="admin"
 export RANCHERBOOTSTRAPSKIP="true"
 # Final Rancher password
 export RANCHERFINALPASSWORD="adminadminadmin"
+# Deploy elemental on rancher
+export ELEMENTAL=true
 # Enable cockpit
 export COCKPIT=true
 # Enable podman
