@@ -41,7 +41,7 @@ if [ "${K3S}" = true ]; then
 	# Download and install the latest k3s installer
 	curl -L --output k3s_installer.sh https://get.k3s.io && install -m755 k3s_installer.sh /usr/local/bin/
 	# Create a systemd unit that installs k3s if not installed yet. The k3s service is started after the installation
-	cat <<- EOF > /etc/systemd/system/install-k3s.service
+	cat <<- EOF > /etc/systemd/system/k3s_installer.service
 	[Unit]
 	Description=Run K3s installer
 	Wants=network-online.target
@@ -60,14 +60,14 @@ if [ "${K3S}" = true ]; then
 	# Disable & delete everything
 	ExecStartPost=/bin/sh -c "systemctl start k3s"
 	ExecStartPost=rm -f /usr/local/bin/k3s_installer.sh
-	ExecStartPost=/bin/sh -c "systemctl disable install-k3s"
-	ExecStartPost=rm -f /etc/systemd/system/install-k3s.service
+	ExecStartPost=/bin/sh -c "systemctl disable k3s_installer"
+	ExecStartPost=rm -f /etc/systemd/system/k3s_installer.service
 	
 	[Install]
 	WantedBy=multi-user.target
 	EOF
 
-	systemctl enable install-k3s.service
+	systemctl enable k3s_installer.service
 fi
 
 # Rancher
@@ -110,14 +110,14 @@ if [ "${RANCHER}" = true ]; then
 		--set replicas=1 \
 		--set global.cattle.psp.enabled=false
 
-	rm -f /etc/systemd/system/install-rancher.service
+	rm -f /etc/systemd/system/rancher_installer.service
 	EOF
 
 	chmod a+x /usr/local/bin/rancher_installer.sh
 
 	# Create a systemd unit to install rancher once
 	# Using "User=root" is required for some environment variables to be present 
-	cat <<- EOF > /etc/systemd/system/install-rancher.service
+	cat <<- EOF > /etc/systemd/system/rancher_installer.service
 	[Unit]
 	Description=Deploy Rancher on K3s
 	Wants=network-online.target
@@ -133,14 +133,14 @@ if [ "${RANCHER}" = true ]; then
 	KillMode=process
 	# Disable & delete everything
 	ExecStartPost=rm -f /usr/local/bin/rancher_installer.sh
-	ExecStartPost=/bin/sh -c "systemctl disable install-rancher.service"
-	ExecStartPost=rm -f /etc/systemd/system/install-rancher.service
+	ExecStartPost=/bin/sh -c "systemctl disable rancher_installer.service"
+	ExecStartPost=rm -f /etc/systemd/system/rancher_installer.service
 
 	[Install]
 	WantedBy=multi-user.target
 	EOF
 
-	systemctl enable install-rancher.service
+	systemctl enable rancher_installer.service
 fi
 
 # Bypass rancher bootstrap
@@ -180,7 +180,7 @@ if [ "${RANCHERBOOTSTRAPSKIP}" = true ]; then
 	[Unit]
 	Description=Skip Rancher Bootstrap
 	Wants=network-online.target
-	After=network.target network-online.target install-rancher.service
+	After=network.target network-online.target rancher_installer.service
 	ConditionPathExists=/usr/local/bin/skip-rancher-bootstrap.sh
 
 	[Service]
@@ -202,13 +202,95 @@ if [ "${RANCHERBOOTSTRAPSKIP}" = true ]; then
 	systemctl enable skip-rancher-bootstrap.service
 fi
 
+# Elemental
+if [ "${ELEMENTAL}" = true ]; then
+	# Helm should be installed at this point
+	# Mount /usr/local to store the rancher script
+	mount /usr/local || true
+
+	# Create a script to deploy elemental that will be called via a systemd service
+	cat <<- "EOF" > /usr/local/bin/elemental_installer.sh
+	#!/bin/bash
+
+	# Wait for k3s to be available
+	until [ -f /etc/rancher/k3s/k3s.yaml ]; do sleep 2; done
+	export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+	# Wait for the node to be available, meaning the K8s API is available
+	while ! kubectl wait --for condition=ready node $(cat /etc/hostname | tr '[:upper:]' '[:lower:]') --timeout=60s; do sleep 2 ; done
+
+		# Add the official Rancher charts to install the ui-plugin operator & CRDs
+	helm repo add rancher-charts https://charts.rancher.io/
+	helm upgrade --create-namespace -n cattle-ui-plugin-system --install ui-plugin-operator rancher-charts/ui-plugin-operator
+	helm upgrade --create-namespace -n cattle-ui-plugin-system --install ui-plugin-operator-crd rancher-charts/ui-plugin-operator-crd 
+
+	# Wait for the operator to be up
+	while ! kubectl wait --for condition=ready -n cattle-ui-plugin-system $(kubectl get pods -n cattle-ui-plugin-system -l app.kubernetes.io/instance=ui-plugin-operator -o name) --timeout=10s; do sleep 2 ; done
+
+	# Deploy the elemental UI plugin
+	# NOTE: TABs and then spaces...
+	cat <<- FOO | kubectl apply -f -
+	apiVersion: catalog.cattle.io/v1
+	kind: UIPlugin
+	metadata:
+	  name: elemental
+	  namespace: cattle-ui-plugin-system
+	spec:
+	  plugin:
+	    endpoint: https://raw.githubusercontent.com/rancher/ui-plugin-charts/main/extensions/elemental/1.1.0
+	    name: elemental
+	    noCache: false
+	    version: 1.1.0
+	FOO
+
+	# Or
+	# helm repo add rancher-ui-plugins https://raw.githubusercontent.com/rancher/ui-plugin-charts/main
+	# helm upgrade --install elemental rancher-ui-plugins/elemental --namespace cattle-ui-plugin-system --create-namespace
+
+	while ! kubectl wait --for condition=namesaccepted CustomResourceDefinition globalroles.management.cattle.io --timeout=10s; do sleep 2 ; done
+
+	# Install elemental using an OCI registry
+	helm upgrade --create-namespace -n cattle-elemental-system --install elemental-operator oci://registry.opensuse.org/isv/rancher/elemental/stable/charts/rancher/elemental-operator-chart
+
+	EOF
+
+	chmod a+x /usr/local/bin/elemental_installer.sh
+
+	# Create a systemd unit to install elemental once
+	# Using "User=root" is required for some environment variables to be present 
+	cat <<- EOF > /etc/systemd/system/elemental_installer.service
+	[Unit]
+	Description=Deploy Elemental on Rancher on K3s
+	Wants=network-online.target
+	After=network.target network-online.target rancher_installer.service
+	ConditionPathExists=/usr/local/bin/elemental_installer.sh
+
+	[Service]
+	User=root
+	Type=forking
+	TimeoutStartSec=120
+	ExecStart=/usr/local/bin/elemental_installer.sh
+	RemainAfterExit=yes
+	KillMode=process
+	# Disable & delete everything
+	ExecStartPost=rm -f /usr/local/bin/elemental_installer.sh
+	ExecStartPost=/bin/sh -c "systemctl disable elemental_installer.service"
+	ExecStartPost=rm -f /etc/systemd/system/elemental_installer.service
+
+	[Install]
+	WantedBy=multi-user.target
+	EOF
+
+	systemctl enable elemental_installer.service
+fi
+
 # Update and reboot as required by transactional-update
 if [ "${UPDATEANDREBOOT}" = true ]; then
 	cat <<- EOF > /etc/systemd/system/update-and-reboot.service
 	[Unit]
 	Description=Reboot if required once
 	Wants=network-online.target
-	After=network.target network-online.target install-rancher.service
+	# If services doesn't exist is ok
+	After=network.target network-online.target k3s_installer.service rancher_installer.service skip-rancher-bootstrap.service elemental_installer.service
 	[Service]
 	User=root
 	# Run this service the last one
