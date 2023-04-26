@@ -96,7 +96,7 @@ umount ${DEST}
 
 Then, boot the VM with rpi.raw as USB and create a new device as virtio for the disk.
 
-Once booted the first time it will reboot infinitely. It is required to stop the VM, remove the USB device and boot it again.
+NOTE: The disk device should be the first one, then the USB, so the USB will boot just once as a fallback.
 
 Then:
 
