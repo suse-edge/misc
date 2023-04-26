@@ -71,7 +71,11 @@ export SSHPUB="${HOME}/.ssh/id_rsa.pub"
 # Set it to false if you don't want K3s to be deployed
 export K3S=true
 # Specify a K3s version
-export K3s_VERSION="v1.25.8+k3s1"
+export INSTALL_K3S_VERSION="v1.25.8+k3s1"
+# Specify K3s installation parameters
+export INSTALL_K3S_EXEC='server --cluster-init --write-kubeconfig-mode=644'
+# K3s token
+export K3S_TOKEN="foobar"
 # Set it to false if you don't want Rancher to be deployed
 export RANCHER=true
 # Initial Rancher bootstrap password

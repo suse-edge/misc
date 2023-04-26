@@ -1,5 +1,6 @@
 #!/bin/bash
 # combustion: network
+set -euo pipefail
 
 # Redirect output to the console
 exec > >(exec tee -a /dev/tty0) 2>&1
@@ -37,8 +38,7 @@ if [ "${K3S}" = true ]; then
 	# Mount /usr/local to store the k3s script
 	mount /usr/local || true
 	# Stolen from https://code.opensuse.org/adathor/combustion-dotconf/blob/main/f/K3s%20cluster/k3s_master/script
-	INSTALL_K3S_EXEC='server --cluster-init --write-kubeconfig-mode=644'
-	# Download and install the latest k3s installer
+		# Download and install the latest k3s installer
 	curl -L --output k3s_installer.sh https://get.k3s.io && install -m755 k3s_installer.sh /usr/local/bin/
 	# Create a systemd unit that installs k3s if not installed yet. The k3s service is started after the installation
 	cat <<- EOF > /etc/systemd/system/k3s_installer.service
@@ -52,8 +52,9 @@ if [ "${K3S}" = true ]; then
 	[Service]
 	Type=forking
 	TimeoutStartSec=120
-	Environment="INSTALL_K3S_EXEC=$INSTALL_K3S_EXEC"
-	Environment="INSTALL_K3S_VERSION=${K3s_VERSION}"
+	Environment="INSTALL_K3S_EXEC=${INSTALL_K3S_EXEC}"
+	Environment="INSTALL_K3S_VERSION=${INSTALL_K3S_VERSION}"
+	Environment="K3S_TOKEN=${K3S_TOKEN}"
 	ExecStart=/usr/local/bin/k3s_installer.sh
 	RemainAfterExit=yes
 	KillMode=process
@@ -81,7 +82,8 @@ if [ "${RANCHER}" = true ]; then
 	# Create a script to install rancher that will be called via a systemd service
 	cat <<- EOF > /usr/local/bin/rancher_installer.sh
 	#!/bin/bash
-
+	set -euo pipefail
+	
 	# Wait for k3s to be available
 	until [ -f /etc/rancher/k3s/k3s.yaml ]; do sleep 2; done
 	export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
@@ -155,6 +157,7 @@ if [ "${RANCHERBOOTSTRAPSKIP}" = true ]; then
 	# See https://stackoverflow.com/a/61259844 for the reason about ${q} :)
 	cat <<- "EOF" > /usr/local/bin/skip-rancher-bootstrap.sh
 	#!/bin/bash
+	set -euo pipefail
 	HOST="https://$(hostname -I | awk '{print $1}').sslip.io"
 
 	while ! kubectl wait --for condition=ready -n cattle-system $(kubectl get pods -n cattle-system -l app=rancher -o name) --timeout=10s; do sleep 2 ; done
@@ -211,6 +214,7 @@ if [ "${ELEMENTAL}" = true ]; then
 	# Create a script to deploy elemental that will be called via a systemd service
 	cat <<- "EOF" > /usr/local/bin/elemental_installer.sh
 	#!/bin/bash
+	set -euo pipefail
 
 	# Wait for k3s to be available
 	until [ -f /etc/rancher/k3s/k3s.yaml ]; do sleep 2; done
