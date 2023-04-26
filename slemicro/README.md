@@ -72,8 +72,12 @@ export SSHPUB="${HOME}/.ssh/id_rsa.pub"
 export K3S=true
 # Specify a K3s version
 export INSTALL_K3S_VERSION="v1.25.8+k3s1"
-# Specify K3s installation parameters
+# Specify K3s installation parameters. For the first node in an HA environment:
 export INSTALL_K3S_EXEC='server --cluster-init --write-kubeconfig-mode=644'
+# To add control plane nodes:
+# export INSTALL_K3S_EXEC='server --server https://192.168.205.66:6443 --write-kubeconfig-mode=644'
+# To add worker nodes:
+# export INSTALL_K3S_EXEC='--server https://192.168.205.66:6443 --write-kubeconfig-mode=644'
 # K3s token
 export K3S_TOKEN="foobar"
 # Set it to false if you don't want Rancher to be deployed
