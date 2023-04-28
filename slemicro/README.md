@@ -68,16 +68,22 @@ export MEMORY=4096
 export DISKSIZE=30
 # Location of the ssh key file to be copied to /root/.ssh/authorized_keys
 export SSHPUB="${HOME}/.ssh/id_rsa.pub"
+# Enable KUBEVIP to manage a VIP for K3s API
+export KUBEVIP=true
+# Set the VIP
+export VIP="192.168.205.10"
 # Set it to false if you don't want K3s to be deployed
 export K3S=true
 # Specify a K3s version
 export INSTALL_K3S_VERSION="v1.25.8+k3s1"
-# Specify K3s installation parameters. For the first node in an HA environment:
-export INSTALL_K3S_EXEC='server --cluster-init --write-kubeconfig-mode=644'
+# For the first node in an HA environment
+# export INSTALL_K3S_EXEC="server --cluster-init --write-kubeconfig-mode=644 --tls-san=${VIP} --tls-san=${VIP}.sslip.io"
+# For a single node
+export INSTALL_K3S_EXEC="server --cluster-init --write-kubeconfig-mode=644"
 # To add control plane nodes:
-# export INSTALL_K3S_EXEC='server --server https://192.168.205.66:6443 --write-kubeconfig-mode=644'
+# export INSTALL_K3S_EXEC="server --server https://${VIP}:6443 --write-kubeconfig-mode=644"
 # To add worker nodes:
-# export INSTALL_K3S_EXEC='--server https://192.168.205.66:6443 --write-kubeconfig-mode=644'
+# export INSTALL_K3S_EXEC="agent --server https://${VIP}:6443"
 # K3s token
 export K3S_TOKEN="foobar"
 # Set it to false if you don't want Rancher to be deployed

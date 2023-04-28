@@ -33,13 +33,13 @@ if [ "${REGISTER}" == true ]; then
 fi
 
 # Check if RANCHERFINALPASSWORD exist
-if [ ! -z "${RANCHERFINALPASSWORD}" ]; then
-	if [ ${#RANCHERFINALPASSWORD} -lt 12 ]; then
+if [[ -n "${RANCHERFINALPASSWORD}" && ${#RANCHERFINALPASSWORD} -lt 12 ]]; then
 		die "RANCHERFINALPASSWORD variable needs to be >12 characters long" 3
-	fi
-	if [ "${REGISTER}" == false ]; then
-		die "RANCHERFINALPASSWORD requires REGISTER" 3
-	fi
+fi
+
+# Bootstrapskip requires installing jq... hence registering :(
+if [ "${REGISTER}" == false ] && [ "${RANCHERBOOTSTRAPSKIP}" == true ]; then
+	die "RANCHERBOOTSTRAPSKIP requires REGISTER" 3
 fi
 
 # Create the image file
