@@ -192,6 +192,8 @@ if [ "${KUBEVIP}" = true ]; then
 	          value: ${VIP}
 	        - name: prometheus_server
 	          value: :2112
+					- name: lb_enable
+						value: "true"
 	        image: ghcr.io/kube-vip/kube-vip:v0.5.12
 	        imagePullPolicy: Always
 	        name: kube-vip
@@ -361,7 +363,7 @@ if [ "${ELEMENTAL}" = true ]; then
 	# Wait for the node to be available, meaning the K8s API is available
 	while ! kubectl wait --for condition=ready node $(cat /etc/hostname | tr '[:upper:]' '[:lower:]') --timeout=60s; do sleep 2 ; done
 
-		# Add the official Rancher charts to install the ui-plugin operator & CRDs
+	# Add the official Rancher charts to install the ui-plugin operator & CRDs
 	helm repo add rancher-charts https://charts.rancher.io/
 	helm upgrade --create-namespace -n cattle-ui-plugin-system --install ui-plugin-operator rancher-charts/ui-plugin-operator
 	helm upgrade --create-namespace -n cattle-ui-plugin-system --install ui-plugin-operator-crd rancher-charts/ui-plugin-operator-crd 
