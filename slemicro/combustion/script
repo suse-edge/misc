@@ -300,7 +300,7 @@ if [ "${RANCHERBOOTSTRAPSKIP}" = true ]; then
 	#!/bin/bash
 	set -euo pipefail
 	HOST="https://$(hostname -I | awk '{print $1}').sslip.io"
-
+  export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
 	while ! kubectl wait --for condition=ready -n cattle-system $(kubectl get pods -n cattle-system -l app=rancher -o name) --timeout=10s; do sleep 2 ; done
 
 	# Get token

@@ -117,6 +117,16 @@ VM IP: 192.168.206.60
 After Rancher is installed, you can access the Web UI as https://192.168.206.60.sslip.io
 ```
 
+You could also pass as a parameter the name of the VM to be used overriding the default one.
+
+```bash
+$ ./create_vm.sh mynewvm
+VM started. You can connect to the serial terminal as: screen /dev/ttys001
+Waiting for IP: ................
+VM IP: 192.168.206.60
+After Rancher is installed, you can access the Web UI as https://192.168.206.60.sslip.io
+```
+
 ## delete_vm.sh
 
 This script is intended to easily delete the previously SLE Micro aarch64 VM on OSX using UTM.
