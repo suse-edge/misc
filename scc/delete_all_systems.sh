@@ -23,14 +23,14 @@ PASS=${2}
 
 SYSTEMS=$(curl -X 'GET' -s 'https://scc.suse.com/connect/organizations/systems' -H 'accept: application/json' -u ${USER}:${PASS})
 TOTAL=$(echo ${SYSTEMS} | jq length)
-TOTAL=$(($TOTAL-1))
 
 if [ ${TOTAL} -lt 0 ]; then
 	# Not an error but a "warn"
 	die "Warning: No systems found" 0
 fi
 
-for i in {0..${TOTAL}}; do
+for ((i=0; i<${TOTAL}; i++)); do
+	echo ${i}
 	LOGIN=$(echo ${SYSTEMS} | jq -r ".[${i}].login")
 	PASS=$(echo ${SYSTEMS} | jq -r ".[${i}].password")
 	curl -X 'DELETE' -s 'https://scc.suse.com/connect/systems' \
