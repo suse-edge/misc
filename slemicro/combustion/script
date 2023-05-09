@@ -213,7 +213,7 @@ if [ "${KUBEVIP}" = true ]; then
 fi
 
 # Rancher
-if [ "${RANCHER}" = true ]; then
+if [ "${RANCHERFLAVOR}" != false ]; then
 	# Mount /usr/local to store the rancher install script
 	mount /usr/local || true
 
@@ -221,6 +221,7 @@ if [ "${RANCHER}" = true ]; then
 	curl -fsSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 |bash
 
 	# Create a script to install rancher that will be called via a systemd service
+	# See https://stackoverflow.com/a/61259844 for the reason about ${q} :)
 	cat <<- EOF > /usr/local/bin/rancher_installer.sh
 	#!/bin/bash
 	set -euo pipefail
@@ -232,7 +233,19 @@ if [ "${RANCHER}" = true ]; then
 	while ! kubectl wait --for condition=ready node $(cat /etc/hostname | tr '[:upper:]' '[:lower:]') --timeout=60s; do sleep 2 ; done
 
 	# https://ranchermanager.docs.rancher.com/pages-for-subheaders/install-upgrade-on-a-kubernetes-cluster
-	helm repo add rancher-latest https://releases.rancher.com/server-charts/latest
+	case ${RANCHERFLAVOR} in
+		"latest" | "stable" | "alpha")
+			helm repo add rancher https://releases.rancher.com/server-charts/${RANCHERFLAVOR}
+		;;
+		"prime")
+			helm repo add rancher https://charts.rancher.com/server-charts/prime
+		;;
+		*)
+			echo "Rancher flavor not detected, using latest"
+			helm repo add rancher https://releases.rancher.com/server-charts/latest
+		;;
+	esac
+
 	helm repo add jetstack https://charts.jetstack.io
 	# Update your local Helm chart repository cache
 	helm repo update
@@ -245,7 +258,7 @@ if [ "${RANCHER}" = true ]; then
 	  --version v1.11.1
 	
 	# Install rancher using sslip.io as hostname and with just a single replica
-	helm install rancher rancher-latest/rancher \
+	helm install rancher rancher/rancher \
   	--namespace cattle-system \
 		--create-namespace \
   	--set hostname=$(hostname -I | awk '{print $1}').sslip.io \

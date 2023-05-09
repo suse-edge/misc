@@ -86,8 +86,8 @@ export INSTALL_K3S_EXEC="server --cluster-init --write-kubeconfig-mode=644"
 # export INSTALL_K3S_EXEC="agent --server https://${VIP}:6443"
 # K3s token
 export K3S_TOKEN="foobar"
-# Set it to false if you don't want Rancher to be deployed
-export RANCHER=true
+# Set it to the Rancher flavor you want to install "stable", "latest", "alpha", "prime" or just false to disable it
+export RANCHERFLAVOR="latest"
 # Initial Rancher bootstrap password
 export RANCHERBOOTSTRAPPASSWORD="admin"
 # Enable to skip the rancher bootstrap phase
