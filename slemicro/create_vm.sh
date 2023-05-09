@@ -11,19 +11,19 @@ die(){
 source ${BASEDIR}/.env
 
 if [ $# -eq 1 ]; then
-    VMNAME=$1
+	VMNAME=$1
 fi
 VMFOLDER="${VMFOLDER:-~/VMs}"
 
 if [ $(uname -o) == "Darwin" ]; then
-  # Check if UTM version is 4.2.2 (required for the scripting part)
-  ver(){ printf "%03d%03d%03d%03d" $(echo "$1" | tr '.' ' '); }
-  UTMVERSION=$(/usr/libexec/plistbuddy -c Print:CFBundleShortVersionString: /Applications/UTM.app/Contents/info.plist)
-  [ $(ver ${UTMVERSION}) -lt $(ver 4.2.2) ] && die "UTM version >= 4.2.2 required" 2
+	# Check if UTM version is 4.2.2 (required for the scripting part)
+	ver(){ printf "%03d%03d%03d%03d" $(echo "$1" | tr '.' ' '); }
+	UTMVERSION=$(/usr/libexec/plistbuddy -c Print:CFBundleShortVersionString: /Applications/UTM.app/Contents/info.plist)
+	[ $(ver ${UTMVERSION}) -lt $(ver 4.2.2) ] && die "UTM version >= 4.2.2 required" 2
 elif [ $(uname -o) == "GNU/Linux" ]; then
-  command -v virt-install > /dev/null 2>&1 || die "virt-install command not found" 2
+	command -v virt-install > /dev/null 2>&1 || die "virt-install command not found" 2
 else
-  die "Unsupported operating system" 2
+	die "Unsupported operating system" 2
 fi
 
 # Check if the commands required exist
@@ -43,7 +43,7 @@ fi
 
 # Check if RANCHERFINALPASSWORD exist
 if [[ -n "${RANCHERFINALPASSWORD}" && ${#RANCHERFINALPASSWORD} -lt 12 ]]; then
-		die "RANCHERFINALPASSWORD variable needs to be >12 characters long" 3
+	die "RANCHERFINALPASSWORD variable needs to be >12 characters long" 3
 fi
 
 # Bootstrapskip requires installing jq... hence registering :(
@@ -93,68 +93,67 @@ rm -Rf ${TMPDIR}
 
 # if x86_64, convert the image to qcow2
 if [ $(uname -o) == "Darwin" ]; then
-  # Create and launch the VM using UTM
-  OUTPUT=$(osascript <<-END
-  tell application "UTM"
-    --- specify a boot ISO
-    set iso to POSIX file "${VMFOLDER}/ignition-and-combustion-${VMNAME}.iso"
-    -- specify the RAW file
-    set rawfile to POSIX file "${VMFOLDER}/${VMNAME}.raw"
-    --- create a new QEMU VM
-    set vm to make new virtual machine with properties {backend:qemu, configuration:{cpu cores:${CPUS}, memory: ${MEMORY}, name:"${VMNAME}", architecture:"aarch64", drives:{{removable:true, source:iso}, {removable:false, source:rawfile}}}}
-    start vm
-    repeat
-      if status of vm is started then exit repeat
-    end repeat
-    get address of first serial port of vm
-  end tell
-  END
-  )
+	# Create and launch the VM using UTM
+	OUTPUT=$(osascript <<-END
+	tell application "UTM"
+		--- specify a boot ISO
+		set iso to POSIX file "${VMFOLDER}/ignition-and-combustion-${VMNAME}.iso"
+		-- specify the RAW file
+		set rawfile to POSIX file "${VMFOLDER}/${VMNAME}.raw"
+		--- create a new QEMU VM
+		set vm to make new virtual machine with properties {backend:qemu, configuration:{cpu cores:${CPUS}, memory: ${MEMORY}, name:"${VMNAME}", architecture:"aarch64", drives:{{removable:true, source:iso}, {removable:false, source:rawfile}}}}
+		start vm
+		repeat
+			if status of vm is started then exit repeat
+		end repeat
+		get address of first serial port of vm
+	end tell
+	END
+	)
 
-  echo "VM started. You can connect to the serial terminal as: screen ${OUTPUT}"
+	echo "VM started. You can connect to the serial terminal as: screen ${OUTPUT}"
 
-  OUTPUT=$(
-  osascript <<-END
-  tell application "UTM"
-    set vm to virtual machine named "${VMNAME}"
-    set config to configuration of vm
-    get address of item 1 of network interfaces of config
-  end tell
-  END
-  )
+	OUTPUT=$(osascript <<-END
+	tell application "UTM"
+		set vm to virtual machine named "${VMNAME}"
+		set config to configuration of vm
+		get address of item 1 of network interfaces of config
+	end tell
+	END
+	)
 
-  VMMAC=$(echo $OUTPUT | sed 's/0\([0-9A-Fa-f]\)/\1/g')
+	VMMAC=$(echo $OUTPUT | sed 's/0\([0-9A-Fa-f]\)/\1/g')
 
-  timeout=180
-  count=0
+	timeout=180
+	count=0
 
-  echo -n "Waiting for IP: "
-  until grep -q -i "${VMMAC}" -B1 -m1 /var/db/dhcpd_leases | head -1 | awk -F= '{ print $2 }'; do
-    count=$((count + 1))
-    if [[ ${count} -ge ${timeout} ]]; then
-      break
-    fi
-    sleep 1
-    echo -n "."
-  done
-  VMIP=$(grep -i "${VMMAC}" -B1 -m1 /var/db/dhcpd_leases | head -1 | awk -F= '{ print $2 }')
+	echo -n "Waiting for IP: "
+	until grep -q -i "${VMMAC}" -B1 -m1 /var/db/dhcpd_leases | head -1 | awk -F= '{ print $2 }'; do
+		count=$((count + 1))
+		if [[ ${count} -ge ${timeout} ]]; then
+			break
+		fi
+		sleep 1
+		echo -n "."
+	done
+	VMIP=$(grep -i "${VMMAC}" -B1 -m1 /var/db/dhcpd_leases | head -1 | awk -F= '{ print $2 }')
 elif [ $(uname -o) == "GNU/Linux" ]; then
-  qemu-img convert -O qcow2 ${VMFOLDER}/${VMNAME}.raw ${VMFOLDER}/${VMNAME}.qcow2
-  virt-install --name ${VMNAME} --autostart --noautoconsole --memory ${MEMORY} --vcpus ${CPUS} --disk ${VMFOLDER}/${VMNAME}.qcow2 --import --cdrom ${VMFOLDER}/ignition-and-combustion-${VMNAME}.iso --network default --osinfo detect=on,name=sle-unknown
-  echo "VM created. Waiting for IP..."
-  timeout=180
-  count=0
-  while [ $(virsh domifaddr prueba | awk -F'[ /]+' '/ipv/ {print $5}' | wc -l) -ne 1 ]; do
-      count=$((count + 1))
-      if [[ ${count} -ge ${timeout} ]]; then
-        break
-      fi
-      sleep 1
-      echo -n "."
-  done
-  VMIP=$(virsh domifaddr prueba | awk -F'[ /]+' '/ipv/ {print $5}' )
+	qemu-img convert -O qcow2 ${VMFOLDER}/${VMNAME}.raw ${VMFOLDER}/${VMNAME}.qcow2
+	virt-install --name ${VMNAME} --autostart --noautoconsole --memory ${MEMORY} --vcpus ${CPUS} --disk ${VMFOLDER}/${VMNAME}.qcow2 --import --cdrom ${VMFOLDER}/ignition-and-combustion-${VMNAME}.iso --network default --osinfo detect=on,name=sle-unknown
+	echo "VM created. Waiting for IP..."
+	timeout=180
+	count=0
+	while [ $(virsh domifaddr prueba | awk -F'[ /]+' '/ipv/ {print $5}' | wc -l) -ne 1 ]; do
+			count=$((count + 1))
+			if [[ ${count} -ge ${timeout} ]]; then
+				break
+			fi
+			sleep 1
+			echo -n "."
+	done
+	VMIP=$(virsh domifaddr prueba | awk -F'[ /]+' '/ipv/ {print $5}' )
 else
-  die "VM not deployed. Unsupported operating system" 2
+	die "VM not deployed. Unsupported operating system" 2
 fi
 
 printf "\nVM IP: ${VMIP}\n"
