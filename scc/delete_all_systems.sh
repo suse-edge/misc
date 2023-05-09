@@ -30,7 +30,6 @@ if [ ${TOTAL} -lt 0 ]; then
 fi
 
 for ((i=0; i<${TOTAL}; i++)); do
-	echo ${i}
 	LOGIN=$(echo ${SYSTEMS} | jq -r ".[${i}].login")
 	PASS=$(echo ${SYSTEMS} | jq -r ".[${i}].password")
 	curl -X 'DELETE' -s 'https://scc.suse.com/connect/systems' \
