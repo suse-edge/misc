@@ -252,17 +252,17 @@ if [ "${RANCHERFLAVOR}" != false ]; then
 
 	# Install the cert-manager Helm chart
 	helm install cert-manager jetstack/cert-manager \
-	  --namespace cert-manager \
-	  --create-namespace \
+		--namespace cert-manager \
+		--create-namespace \
 		--set installCRDs=true \
-	  --version v1.11.1
+		--version v1.11.1
 	
 	# Install rancher using sslip.io as hostname and with just a single replica
 	helm install rancher rancher/rancher \
-  	--namespace cattle-system \
+		--namespace cattle-system \
 		--create-namespace \
-  	--set hostname=$(hostname -I | awk '{print $1}').sslip.io \
-  	--set bootstrapPassword=${RANCHERBOOTSTRAPPASSWORD} \
+		--set hostname=$(hostname -I | awk '{print $1}').sslip.io \
+		--set bootstrapPassword=${RANCHERBOOTSTRAPPASSWORD} \
 		--set replicas=1 \
 		--set global.cattle.psp.enabled=false
 
@@ -313,7 +313,7 @@ if [ "${RANCHERBOOTSTRAPSKIP}" = true ]; then
 	#!/bin/bash
 	set -euo pipefail
 	HOST="https://$(hostname -I | awk '{print $1}').sslip.io"
-  export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+	export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
 	while ! kubectl wait --for condition=ready -n cattle-system $(kubectl get pods -n cattle-system -l app=rancher -o name) --timeout=10s; do sleep 2 ; done
 
 	# Get token
