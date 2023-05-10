@@ -143,7 +143,7 @@ elif [ $(uname -o) == "GNU/Linux" ]; then
 	echo "VM created. Waiting for IP..."
 	timeout=180
 	count=0
-	while [ $(virsh domifaddr prueba | awk -F'[ /]+' '/ipv/ {print $5}' | wc -l) -ne 1 ]; do
+	while [ $(virsh domifaddr ${VMNAME} | awk -F'[ /]+' '/ipv/ {print $5}' | wc -l) -ne 1 ]; do
 			count=$((count + 1))
 			if [[ ${count} -ge ${timeout} ]]; then
 				break
@@ -151,7 +151,7 @@ elif [ $(uname -o) == "GNU/Linux" ]; then
 			sleep 1
 			echo -n "."
 	done
-	VMIP=$(virsh domifaddr prueba | awk -F'[ /]+' '/ipv/ {print $5}' )
+	VMIP=$(virsh domifaddr ${VMNAME} | awk -F'[ /]+' '/ipv/ {print $5}' )
 else
 	die "VM not deployed. Unsupported operating system" 2
 fi
