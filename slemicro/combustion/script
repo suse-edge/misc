@@ -34,7 +34,7 @@ if [ "${PODMAN}" = true ]; then
 fi
 
 # K3s
-if [ "${K3S}" = true ]; then
+if [ "${CLUSTER}" == "k3s" ]; then
 	# Mount /usr/local to store the k3s script
 	mount /usr/local || true
 	# Stolen from https://code.opensuse.org/adathor/combustion-dotconf/blob/main/f/K3s%20cluster/k3s_master/script
@@ -52,10 +52,10 @@ if [ "${K3S}" = true ]; then
 	[Service]
 	User=root
 	Type=forking
-	TimeoutStartSec=120
-	Environment="INSTALL_K3S_EXEC=${INSTALL_K3S_EXEC}"
-	Environment="INSTALL_K3S_VERSION=${INSTALL_K3S_VERSION}"
-	Environment="K3S_TOKEN=${K3S_TOKEN}"
+	TimeoutStartSec=600
+	Environment="INSTALL_K3S_EXEC=${INSTALL_CLUSTER_EXEC}"
+	Environment="INSTALL_K3S_VERSION=${INSTALL_CLUSTER_VERSION}"
+	Environment="K3S_TOKEN=${CLUSTER_TOKEN}"
 	Environment="INSTALL_K3S_SKIP_START=false"
 	ExecStart=/usr/local/bin/k3s_installer.sh
 	RemainAfterExit=yes
@@ -74,6 +74,50 @@ if [ "${K3S}" = true ]; then
 	EOF
 
 	systemctl enable k3s_installer.service
+fi
+
+# RKE2
+if [ "${CLUSTER}" == "rke2" ]; then
+	# Mount /usr/local to store the RKE2 script
+	mount /usr/local || true
+
+	curl -L --output rke2_installer.sh https://get.rke2.io && install -m755 rke2_installer.sh /usr/local/bin/
+	# Create a systemd unit that installs rke2 if not installed yet. The rke2 service is started after the installation
+	cat <<- EOF > /etc/systemd/system/rke2_installer.service
+	[Unit]
+	Description=Run RKE2 installer
+	Wants=network-online.target
+	After=network.target network-online.target
+	ConditionPathExists=/usr/local/bin/rke2_installer.sh
+	ConditionPathExists=!/opt/rke2/bin/rke2
+
+	[Service]
+	User=root
+	Type=forking
+	TimeoutStartSec=600
+	Environment="INSTALL_RKE2_EXEC=${INSTALL_CLUSTER_EXEC}"
+	Environment="INSTALL_RKE2_VERSION=${INSTALL_CLUSTER_VERSION}"
+	Environment="RKE2_TOKEN=${CLUSTER_TOKEN}"
+	ExecStart=/usr/local/bin/rke2_installer.sh
+	RemainAfterExit=yes
+	KillMode=process
+	ExecStartPost=/bin/sh -c "systemctl enable --now rke2-server.service; systemctl start --no-block --now rke2-server.service"
+	# update path in exec start post to include rke2 bin path
+	ExecStartPost=/bin/sh -c "echo 'export KUBECONFIG=/etc/rancher/rke2/rke2.yaml' >> ~/.bashrc ; echo 'export PATH=${PATH}:/var/lib/rancher/rke2/bin' >> ~/.bashrc ; source ~/.bashrc"
+	# Move the kube-vip file if exists
+	ExecStartPost=/bin/sh -c "mkdir -p /var/lib/rancher/rke2/server/manifests"
+	ExecStartPost=/bin/sh -c "[ -f /root/kube-vip.yaml ] && mv /root/kube-vip.yaml /var/lib/rancher/rke2/server/manifests/kube-vip.yaml"
+	ExecStartPost=/bin/sh -c "[ -f /var/lib/rancher/rke2/server/manifests/kube-vip.yaml ] && chcon -t container_var_lib_t /var/lib/rancher/rke2/server/manifests/kube-vip.yaml"
+	# Disable & delete everything
+	ExecStartPost=rm -f /usr/local/bin/rke2_installer.sh
+	ExecStartPost=/bin/sh -c "systemctl disable rke2_installer"
+	ExecStartPost=rm -f /etc/systemd/system/rke2_installer.service
+
+	[Install]
+	WantedBy=multi-user.target
+	EOF
+
+	systemctl enable rke2_installer.service
 fi
 
 # If Kubevip is enabled to have a VIP for the K3s API
@@ -183,17 +227,23 @@ if [ "${KUBEVIP}" = true ]; then
 	        - name: vip_leaderelection
 	          value: "true"
 	        - name: vip_leaseduration
-	          value: "5"
+	          value: "30"
 	        - name: vip_renewdeadline
-	          value: "3"
+	          value: "20"
 	        - name: vip_retryperiod
-	          value: "1"
+	          value: "4"
 	        - name: address
 	          value: ${VIP}
-	        - name: prometheus_server
-	          value: :2112
+	EOF
+	if [ ${CLUSTER} == "k3s" ]; then
+		cat <<- EOF >> /root/kube-vip.yaml
 	        - name: lb_enable
 	          value: "true"
+	EOF
+	fi
+  	cat <<- EOF >> /root/kube-vip.yaml
+	        - name: prometheus_server
+	          value: :2112
 	        image: ghcr.io/kube-vip/kube-vip:v0.5.12
 	        imagePullPolicy: Always
 	        name: kube-vip
@@ -203,6 +253,8 @@ if [ "${KUBEVIP}" = true ]; then
 	            - NET_ADMIN
 	            - NET_RAW
 	      hostNetwork: true
+	      nodeSelector:
+	        node-role.kubernetes.io/master: "true"
 	      serviceAccountName: kube-vip
 	      tolerations:
 	      - effect: NoSchedule
@@ -225,13 +277,12 @@ if [ "${RANCHERFLAVOR}" != false ]; then
 	cat <<- EOF > /usr/local/bin/rancher_installer.sh
 	#!/bin/bash
 	set -euo pipefail
-	
-	# Wait for k3s to be available
-	until [ -f /etc/rancher/k3s/k3s.yaml ]; do sleep 2; done
-	export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+	# Wait for cluster to be available
+	until [ -f ${KUBECONFIG} ]; do sleep 2; done
+	# export the kubeconfig using the right kubeconfig path depending on the cluster (k3s or rke2)
+	export KUBECONFIG=${KUBECONFIG}
 	# Wait for the node to be available, meaning the K8s API is available
-	while ! kubectl wait --for condition=ready node $(cat /etc/hostname | tr '[:upper:]' '[:lower:]') --timeout=60s; do sleep 2 ; done
-
+	while ! ${KUBECTL} wait --for condition=ready node $(cat /etc/hostname | tr '[:upper:]' '[:lower:]') --timeout=60s; do sleep 2 ; done
 	# https://ranchermanager.docs.rancher.com/pages-for-subheaders/install-upgrade-on-a-kubernetes-cluster
 	case ${RANCHERFLAVOR} in
 		"latest" | "stable" | "alpha")
@@ -272,18 +323,18 @@ if [ "${RANCHERFLAVOR}" != false ]; then
 	chmod a+x /usr/local/bin/rancher_installer.sh
 
 	# Create a systemd unit to install rancher once
-	# Using "User=root" is required for some environment variables to be present 
+	# Using "User=root" is required for some environment variables to be present
 	cat <<- EOF > /etc/systemd/system/rancher_installer.service
 	[Unit]
-	Description=Deploy Rancher on K3s
+	Description=Deploy Rancher on K3S/RKE2
 	Wants=network-online.target
-	After=network.target network-online.target k3s.service
+	After=network.target network-online.target ${CLUSTER_INSTALL_SERVICE}
 	ConditionPathExists=/usr/local/bin/rancher_installer.sh
 
 	[Service]
 	User=root
 	Type=forking
-	TimeoutStartSec=120
+	TimeoutStartSec=900
 	ExecStart=/usr/local/bin/rancher_installer.sh
 	RemainAfterExit=yes
 	KillMode=process
@@ -313,8 +364,9 @@ if [ "${RANCHERBOOTSTRAPSKIP}" = true ]; then
 	#!/bin/bash
 	set -euo pipefail
 	HOST="https://$(hostname -I | awk '{print $1}').sslip.io"
-	export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
-	while ! kubectl wait --for condition=ready -n cattle-system $(kubectl get pods -n cattle-system -l app=rancher -o name) --timeout=10s; do sleep 2 ; done
+	# export the kubeconfig using the right kubeconfig path depending on the cluster (k3s or rke2)
+	export KUBECONFIG=${KUBECONFIG}
+	while ! ${KUBECTL} wait --for condition=ready -n cattle-system $(${KUBECTL} get pods -n cattle-system -l app=rancher -o name) --timeout=10s; do sleep 2 ; done
 
 	# Get token
 	TOKEN=$(curl -sk -X POST $${q}HOST/v3-public/localProviders/local?action=login -H 'content-type: application/json' -d '{"username":"admin","password":"${RANCHERBOOTSTRAPPASSWORD}"}' | jq -r .token)
@@ -343,7 +395,7 @@ if [ "${RANCHERBOOTSTRAPSKIP}" = true ]; then
 	[Service]
 	User=root
 	Type=forking
-	TimeoutStartSec=120
+	TimeoutStartSec=900
 	ExecStart=/usr/local/bin/skip-rancher-bootstrap.sh
 	RemainAfterExit=yes
 	KillMode=process
@@ -371,10 +423,11 @@ if [ "${ELEMENTAL}" = true ]; then
 	set -euo pipefail
 
 	# Wait for k3s to be available
-	until [ -f /etc/rancher/k3s/k3s.yaml ]; do sleep 2; done
-	export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+	until [ -f ${KUBECONFIG} ]; do sleep 2; done
+	# export the kubeconfig using the right kubeconfig path depending on the cluster (k3s or rke2)
+	export KUBECONFIG=${KUBECONFIG}
 	# Wait for the node to be available, meaning the K8s API is available
-	while ! kubectl wait --for condition=ready node $(cat /etc/hostname | tr '[:upper:]' '[:lower:]') --timeout=60s; do sleep 2 ; done
+	while ! ${KUBECTL} wait --for condition=ready node $(cat /etc/hostname | tr '[:upper:]' '[:lower:]') --timeout=60s; do sleep 2 ; done
 
 	# Add the official Rancher charts to install the ui-plugin operator & CRDs
 	helm repo add rancher-charts https://charts.rancher.io/
@@ -382,11 +435,11 @@ if [ "${ELEMENTAL}" = true ]; then
 	helm upgrade --create-namespace -n cattle-ui-plugin-system --install ui-plugin-operator-crd rancher-charts/ui-plugin-operator-crd 
 
 	# Wait for the operator to be up
-	while ! kubectl wait --for condition=ready -n cattle-ui-plugin-system $(kubectl get pods -n cattle-ui-plugin-system -l app.kubernetes.io/instance=ui-plugin-operator -o name) --timeout=10s; do sleep 2 ; done
+	while ! ${KUBECTL} wait --for condition=ready -n cattle-ui-plugin-system $(${KUBECTL} get pods -n cattle-ui-plugin-system -l app.kubernetes.io/instance=ui-plugin-operator -o name) --timeout=10s; do sleep 2 ; done
 
 	# Deploy the elemental UI plugin
 	# NOTE: TABs and then spaces...
-	cat <<- FOO | kubectl apply -f -
+	cat <<- FOO | ${KUBECTL} apply -f -
 	apiVersion: catalog.cattle.io/v1
 	kind: UIPlugin
 	metadata:
@@ -404,7 +457,7 @@ if [ "${ELEMENTAL}" = true ]; then
 	# helm repo add rancher-ui-plugins https://raw.githubusercontent.com/rancher/ui-plugin-charts/main
 	# helm upgrade --install elemental rancher-ui-plugins/elemental --namespace cattle-ui-plugin-system --create-namespace
 
-	while ! kubectl wait --for condition=namesaccepted CustomResourceDefinition globalroles.management.cattle.io --timeout=10s; do sleep 2 ; done
+	while ! ${KUBECTL} wait --for condition=namesaccepted CustomResourceDefinition globalroles.management.cattle.io --timeout=10s; do sleep 2 ; done
 
 	# Install elemental using an OCI registry
 	helm upgrade --create-namespace -n cattle-elemental-system --install elemental-operator oci://registry.opensuse.org/isv/rancher/elemental/stable/charts/rancher/elemental-operator-chart
@@ -417,7 +470,7 @@ if [ "${ELEMENTAL}" = true ]; then
 	# Using "User=root" is required for some environment variables to be present 
 	cat <<- EOF > /etc/systemd/system/elemental_installer.service
 	[Unit]
-	Description=Deploy Elemental on Rancher on K3s
+	Description=Deploy Elemental on Rancher on Cluster k3s/rke2
 	Wants=network-online.target
 	After=network.target network-online.target rancher_installer.service
 	ConditionPathExists=/usr/local/bin/elemental_installer.sh
@@ -425,7 +478,7 @@ if [ "${ELEMENTAL}" = true ]; then
 	[Service]
 	User=root
 	Type=forking
-	TimeoutStartSec=120
+	TimeoutStartSec=900
 	ExecStart=/usr/local/bin/elemental_installer.sh
 	RemainAfterExit=yes
 	KillMode=process
@@ -448,7 +501,7 @@ if [ "${UPDATEANDREBOOT}" = true ]; then
 	Description=Reboot if required once
 	Wants=network-online.target
 	# If services doesn't exist is ok
-	After=network.target network-online.target k3s_installer.service rancher_installer.service skip-rancher-bootstrap.service elemental_installer.service
+	After=network.target network-online.target ${CLUSTER_INSTALL_SERVICE} rancher_installer.service skip-rancher-bootstrap.service elemental_installer.service
 	[Service]
 	User=root
 	# Run this service the last one

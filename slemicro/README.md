@@ -28,7 +28,7 @@ This script creates a SLE Micro aarch64 VM on OSX using UTM and it is customized
 The script will output the virtual terminal to connect to (using `screen` if needed) as well as the
 IP that it gets from the OSX DHCPD service.
 
-K3s and Rancher are optionally installed. Rancher access is configured with sslip.io and with a custom bootstrap password.
+K3s or RKE2 and Rancher are optionally installed. Rancher access is configured with sslip.io and with a custom bootstrap password.
 
 ### Prerequisites
 
@@ -42,8 +42,9 @@ NOTE: They can be installed using `brew`
 
 * SLE Micro raw image.
   * Download the raw image file from the SUSE website at https://www.suse.com/download/sle-micro/
-  * Select ARM architecture
+  * Select ARM or X86_64 architecture (depending on the Operating system of the host)
   * Look for the raw file (I.e.- `SLE-Micro.aarch64-5.3.0-Default-GM.raw.xz`)
+  * Note: SLE Micro RT image (I.e.- `SLE-Micro.aarch64-5.3.0-Default-RT-GM.raw.xz`) can be used as well.
 
 ### Enviroment variables
 
@@ -72,20 +73,20 @@ export SSHPUB="${HOME}/.ssh/id_rsa.pub"
 export KUBEVIP=true
 # Set the VIP
 export VIP="192.168.205.10"
-# Set it to false if you don't want K3s to be deployed
-export K3S=true
-# Specify a K3s version
-export INSTALL_K3S_VERSION="v1.25.8+k3s1"
-# For the first node in an HA environment
-# export INSTALL_K3S_EXEC="server --cluster-init --write-kubeconfig-mode=644 --tls-san=${VIP} --tls-san=${VIP}.sslip.io"
-# For a single node
-export INSTALL_K3S_EXEC="server --cluster-init --write-kubeconfig-mode=644"
-# To add control plane nodes:
-# export INSTALL_K3S_EXEC="server --server https://${VIP}:6443 --write-kubeconfig-mode=644"
-# To add worker nodes:
-# export INSTALL_K3S_EXEC="agent --server https://${VIP}:6443"
-# K3s token
-export K3S_TOKEN="foobar"
+# Set it to false if you don't want K3s or rke2 to be deployed ["k3s"|"rke2"|false]
+export CLUSTER="k3s"
+# Specify a k3s or rke2 cluster version ["v1.25.8+k3s1"|"v1.25.9+rke2r1"]
+export INSTALL_CLUSTER_VERSION="v1.25.8+k3s1"
+# For the first node in an HA environment. This INSTALL_CLUSTER_EXEC will be translated to INSTALL_K3S_EXEC or INSTALL_RKE2_EXEC depending on the value of CLUSTER
+# export INSTALL_CLUSTER_EXEC="server --cluster-init --write-kubeconfig-mode=644 --tls-san=${VIP} --tls-san=${VIP}.sslip.io"
+# For a single node. This INSTALL_CLUSTER_EXEC will be translated to INSTALL_K3S_EXEC or INSTALL_RKE2_EXEC depending on the value of CLUSTER
+export INSTALL_CLUSTER_EXEC="server --cluster-init --write-kubeconfig-mode=644"
+# To add control plane nodes. This INSTALL_CLUSTER_EXEC will be translated to INSTALL_K3S_EXEC or INSTALL_RKE2_EXEC depending on the value of CLUSTER:
+# export INSTALL_CLUSTER_EXEC="server --server https://${VIP}:6443 --write-kubeconfig-mode=644"
+# To add worker nodes. This INSTALL_CLUSTER_EXEC will be translated to INSTALL_K3S_EXEC or INSTALL_RKE2_EXEC depending on the value of CLUSTER:
+# export INSTALL_CLUSTER_EXEC="agent --server https://${VIP}:6443"
+# Cluster token to be used to add more hosts and it will be translated to K3S_TOKEN or RKE2_TOKEN depending on the value of CLUSTER
+export CLUSTER_TOKEN="foobar"
 # Set it to the Rancher flavor you want to install "stable", "latest", "alpha", "prime" or just false to disable it
 export RANCHERFLAVOR="latest"
 # Initial Rancher bootstrap password
@@ -129,7 +130,7 @@ After Rancher is installed, you can access the Web UI as https://192.168.206.60.
 
 ## delete_vm.sh
 
-This script is intended to easily delete the previously SLE Micro aarch64 VM on OSX using UTM.
+This script is intended to easily delete the previously SLE Micro VM created with the `create_vm.sh` script.
 
 :warning: There is no confirmation whatsoever!
 

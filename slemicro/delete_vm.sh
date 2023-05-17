@@ -26,7 +26,8 @@ if [ $(uname -o) == "Darwin" ]; then
 		end repeat
 		delete virtual machine named "${VMNAME}"
 	end tell
-	END)
+	END
+	)
 elif [ $(uname -o) == "GNU/Linux" ]; then
 	virsh destroy ${VMNAME}
 	virsh undefine ${VMNAME}

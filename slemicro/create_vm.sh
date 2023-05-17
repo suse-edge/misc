@@ -15,6 +15,7 @@ if [ $# -eq 1 ]; then
 fi
 VMFOLDER="${VMFOLDER:-~/VMs}"
 
+
 if [ $(uname -o) == "Darwin" ]; then
 	# Check if UTM version is 4.2.2 (required for the scripting part)
 	ver(){ printf "%03d%03d%03d%03d" $(echo "$1" | tr '.' ' '); }
@@ -50,6 +51,25 @@ fi
 if [ "${REGISTER}" == false ] && [ "${RANCHERBOOTSTRAPSKIP}" == true ]; then
 	die "RANCHERBOOTSTRAPSKIP requires REGISTER" 3
 fi
+
+# Check if cluster installation to set correct path to kubeconfig and kubectl
+case ${CLUSTER} in
+	"k3s")
+  		export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+  		export KUBECTL=/usr/local/bin/kubectl
+  		export CLUSTER_INSTALL_SERVICE=k3s_installer.service
+  		;;
+	"rke2")
+  		export KUBECONFIG=/etc/rancher/rke2/rke2.yaml
+  		export KUBECTL=/var/lib/rancher/rke2/bin/kubectl
+  		export CLUSTER_INSTALL_SERVICE=rke2_installer.service
+  		;;
+	false)
+		;;
+	*)
+		die "CLUSTER variable not supported" 2
+		;;
+esac
 
 # Create the image file
 mkdir -p ${VMFOLDER}
