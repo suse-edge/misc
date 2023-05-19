@@ -60,6 +60,9 @@ if [ "${CLUSTER}" == "k3s" ]; then
 	ExecStart=/usr/local/bin/k3s_installer.sh
 	RemainAfterExit=yes
 	KillMode=process
+	# Load the proper modules for kube-vip lb to work
+	ExecStartPost=/bin/sh -c "[ -f /root/ipvs.conf ] && mv /root/ipvs.conf /etc/modules-load.d/ipvs.conf"
+	ExecStartPost=/bin/sh -c "[ -f /etc/modules-load.d/ipvs.conf ] && for i in $(cat /etc/modules-load.d/ipvs.conf); do modprobe ${i}; done"
 	# Move the kube-vip file if exists
 	ExecStartPost=/bin/sh -c "[ -f /root/kube-vip.yaml ] && mkdir -p /var/lib/rancher/k3s/server/manifests"
 	ExecStartPost=/bin/sh -c "[ -f /root/kube-vip.yaml ] && mv /root/kube-vip.yaml /var/lib/rancher/k3s/server/manifests/kube-vip.yaml"
@@ -104,6 +107,9 @@ if [ "${CLUSTER}" == "rke2" ]; then
 	ExecStartPost=/bin/sh -c "systemctl enable --now rke2-server.service; systemctl start --no-block --now rke2-server.service"
 	# update path in exec start post to include rke2 bin path
 	ExecStartPost=/bin/sh -c "echo 'export KUBECONFIG=/etc/rancher/rke2/rke2.yaml' >> ~/.bashrc ; echo 'export PATH=${PATH}:/var/lib/rancher/rke2/bin' >> ~/.bashrc ; source ~/.bashrc"
+	# Load the proper modules for kube-vip lb to work
+	ExecStartPost=/bin/sh -c "[ -f /root/ipvs.conf ] && mv /root/ipvs.conf /etc/modules-load.d/ipvs.conf"
+	ExecStartPost=/bin/sh -c "[ -f /etc/modules-load.d/ipvs.conf ] && for i in $(cat /etc/modules-load.d/ipvs.conf); do modprobe ${i}; done"
 	# Move the kube-vip file if exists
 	ExecStartPost=/bin/sh -c "mkdir -p /var/lib/rancher/rke2/server/manifests"
 	ExecStartPost=/bin/sh -c "[ -f /root/kube-vip.yaml ] && mv /root/kube-vip.yaml /var/lib/rancher/rke2/server/manifests/kube-vip.yaml"
@@ -134,6 +140,17 @@ fi
 #     --arp \
 #     --leaderElection > foobar.yaml
 if [ "${KUBEVIP}" = true ]; then
+	# lb_enable requires loading the ip_vs modules
+	# https://kube-vip.io/docs/about/architecture/?query=lb_enable#control-plane-load-balancing
+	# But at this point that folder is not valid and it won't work
+	cat <<- EOF > /root/ipvs.conf
+	ip_vs
+	ip_vs_rr
+	ip_vs_wrr
+	ip_vs_sh
+	nf_conntrack
+	EOF
+	
 	# The proper path would be /var/lib/rancher/k3s/server/manifests
 	# but as this is done at combustion time, the folder will be
 	# overwritten when installing K3s as:
@@ -234,14 +251,8 @@ if [ "${KUBEVIP}" = true ]; then
 	          value: "4"
 	        - name: address
 	          value: ${VIP}
-	EOF
-	if [ ${CLUSTER} == "k3s" ]; then
-		cat <<- EOF >> /root/kube-vip.yaml
 	        - name: lb_enable
 	          value: "true"
-	EOF
-	fi
-  	cat <<- EOF >> /root/kube-vip.yaml
 	        - name: prometheus_server
 	          value: :2112
 	        image: ghcr.io/kube-vip/kube-vip:v0.5.12
