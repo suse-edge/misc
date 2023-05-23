@@ -159,7 +159,21 @@ if [ $(uname -o) == "Darwin" ]; then
 	VMIP=$(grep -i "${VMMAC}" -B1 -m1 /var/db/dhcpd_leases | head -1 | awk -F= '{ print $2 }')
 elif [ $(uname -o) == "GNU/Linux" ]; then
 	qemu-img convert -O qcow2 ${VMFOLDER}/${VMNAME}.raw ${VMFOLDER}/${VMNAME}.qcow2
-	virt-install --name ${VMNAME} --autostart --noautoconsole --memory ${MEMORY} --vcpus ${CPUS} --disk ${VMFOLDER}/${VMNAME}.qcow2 --import --cdrom ${VMFOLDER}/ignition-and-combustion-${VMNAME}.iso --network default --osinfo detect=on,name=sle-unknown
+	# The raw file is still there doing nothing
+	rm -f ${VMFOLDER}/${VMNAME}.raw
+	# Give libvirt group permissions for both the disk an the ISO
+	chmod 0664 ${VMFOLDER}/${VMNAME}.qcow2 ${VMFOLDER}/ignition-and-combustion-${VMNAME}.iso
+	chgrp libvirt ${VMFOLDER}/${VMNAME}.qcow2 ${VMFOLDER}/ignition-and-combustion-${VMNAME}.iso
+	virt-install --name ${VMNAME} \
+		--autostart \
+		--noautoconsole \
+		--memory ${MEMORY} \
+		--vcpus ${CPUS} \
+		--disk ${VMFOLDER}/${VMNAME}.qcow2 \
+		--import \
+		--cdrom ${VMFOLDER}/ignition-and-combustion-${VMNAME}.iso \
+		--network network=default \
+		--osinfo detect=on,name=sle-unknown
 	echo "VM created. Waiting for IP..."
 	timeout=180
 	count=0
