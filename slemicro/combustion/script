@@ -318,7 +318,13 @@ if [ "${RANCHERFLAVOR}" != false ]; then
 		--create-namespace \
 		--set installCRDs=true \
 		--version v1.11.1
-	
+
+	# https://github.com/rancher/rke2/issues/3958
+	if [ "${CLUSTER}" == "rke2" ]; then
+		# Wait for the rke2-ingress-nginx-controller DS to be available if using RKE2
+		while ! ${KUBECTL} rollout status daemonset -n kube-system rke2-ingress-nginx-controller --timeout=60s; do sleep 2 ; done
+	fi
+
 	# Install rancher using sslip.io as hostname and with just a single replica
 	helm install rancher rancher/rancher \
 		--namespace cattle-system \
@@ -378,6 +384,12 @@ if [ "${RANCHERBOOTSTRAPSKIP}" = true ]; then
 	# export the kubeconfig using the right kubeconfig path depending on the cluster (k3s or rke2)
 	export KUBECONFIG=${KUBECONFIG}
 	while ! ${KUBECTL} wait --for condition=ready -n cattle-system $(${KUBECTL} get pods -n cattle-system -l app=rancher -o name) --timeout=10s; do sleep 2 ; done
+
+	# https://github.com/rancher/rke2/issues/3958
+	if [ "${CLUSTER}" == "rke2" ]; then
+		# Wait for the rke2-ingress-nginx-controller DS to be available if using RKE2
+		while ! ${KUBECTL} rollout status daemonset -n kube-system rke2-ingress-nginx-controller --timeout=60s; do sleep 2 ; done
+	fi
 
 	# Get token
 	TOKEN=$(curl -sk -X POST $${q}HOST/v3-public/localProviders/local?action=login -H 'content-type: application/json' -d '{"username":"admin","password":"${RANCHERBOOTSTRAPPASSWORD}"}' | jq -r .token)
@@ -439,6 +451,12 @@ if [ "${ELEMENTAL}" = true ]; then
 	export KUBECONFIG=${KUBECONFIG}
 	# Wait for the node to be available, meaning the K8s API is available
 	while ! ${KUBECTL} wait --for condition=ready node $(cat /etc/hostname | tr '[:upper:]' '[:lower:]') --timeout=60s; do sleep 2 ; done
+
+	# https://github.com/rancher/rke2/issues/3958
+	if [ "${CLUSTER}" == "rke2" ]; then
+		# Wait for the rke2-ingress-nginx-controller DS to be available if using RKE2
+		while ! ${KUBECTL} rollout status daemonset -n kube-system rke2-ingress-nginx-controller --timeout=60s; do sleep 2 ; done
+	fi
 
 	# Add the official Rancher charts to install the ui-plugin operator & CRDs
 	helm repo add rancher-charts https://charts.rancher.io/
