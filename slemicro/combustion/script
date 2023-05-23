@@ -62,7 +62,7 @@ if [ "${CLUSTER}" == "k3s" ]; then
 	KillMode=process
 	# Load the proper modules for kube-vip lb to work
 	ExecStartPost=/bin/sh -c "[ -f /root/ipvs.conf ] && mv /root/ipvs.conf /etc/modules-load.d/ipvs.conf"
-	ExecStartPost=/bin/sh -c "[ -f /etc/modules-load.d/ipvs.conf ] && for i in $(cat /etc/modules-load.d/ipvs.conf); do modprobe ${i}; done"
+	ExecStartPost=/bin/sh -c "[ -f /etc/modules-load.d/ipvs.conf ] && systemctl restart systemd-modules-load"
 	# Move the kube-vip file if exists
 	ExecStartPost=/bin/sh -c "[ -f /root/kube-vip.yaml ] && mkdir -p /var/lib/rancher/k3s/server/manifests"
 	ExecStartPost=/bin/sh -c "[ -f /root/kube-vip.yaml ] && mv /root/kube-vip.yaml /var/lib/rancher/k3s/server/manifests/kube-vip.yaml"
@@ -109,7 +109,7 @@ if [ "${CLUSTER}" == "rke2" ]; then
 	ExecStartPost=/bin/sh -c "echo 'export KUBECONFIG=/etc/rancher/rke2/rke2.yaml' >> ~/.bashrc ; echo 'export PATH=${PATH}:/var/lib/rancher/rke2/bin' >> ~/.bashrc ; source ~/.bashrc"
 	# Load the proper modules for kube-vip lb to work
 	ExecStartPost=/bin/sh -c "[ -f /root/ipvs.conf ] && mv /root/ipvs.conf /etc/modules-load.d/ipvs.conf"
-	ExecStartPost=/bin/sh -c "[ -f /etc/modules-load.d/ipvs.conf ] && for i in $(cat /etc/modules-load.d/ipvs.conf); do modprobe ${i}; done"
+	ExecStartPost=/bin/sh -c "[ -f /etc/modules-load.d/ipvs.conf ] && systemctl restart systemd-modules-load"
 	# Move the kube-vip file if exists
 	ExecStartPost=/bin/sh -c "mkdir -p /var/lib/rancher/rke2/server/manifests"
 	ExecStartPost=/bin/sh -c "[ -f /root/kube-vip.yaml ] && mv /root/kube-vip.yaml /var/lib/rancher/rke2/server/manifests/kube-vip.yaml"
