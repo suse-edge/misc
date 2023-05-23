@@ -61,12 +61,12 @@ if [ "${CLUSTER}" == "k3s" ]; then
 	RemainAfterExit=yes
 	KillMode=process
 	# Load the proper modules for kube-vip lb to work
-	ExecStartPost=/bin/sh -c "[ -f /root/ipvs.conf ] && mv /root/ipvs.conf /etc/modules-load.d/ipvs.conf"
-	ExecStartPost=/bin/sh -c "[ -f /etc/modules-load.d/ipvs.conf ] && systemctl restart systemd-modules-load"
+	ExecStartPost=/bin/sh -c "[ -f /root/ipvs.conf ] && mv /root/ipvs.conf /etc/modules-load.d/ipvs.conf || true"
+	ExecStartPost=/bin/sh -c "[ -f /etc/modules-load.d/ipvs.conf ] && systemctl restart systemd-modules-load || true"
 	# Move the kube-vip file if exists
-	ExecStartPost=/bin/sh -c "[ -f /root/kube-vip.yaml ] && mkdir -p /var/lib/rancher/k3s/server/manifests"
-	ExecStartPost=/bin/sh -c "[ -f /root/kube-vip.yaml ] && mv /root/kube-vip.yaml /var/lib/rancher/k3s/server/manifests/kube-vip.yaml"
-	ExecStartPost=/bin/sh -c "[ -f /var/lib/rancher/k3s/server/manifests/kube-vip.yaml ] && chcon -t container_var_lib_t /var/lib/rancher/k3s/server/manifests/kube-vip.yaml"
+	ExecStartPost=/bin/sh -c "[ -f /root/kube-vip.yaml ] && mkdir -p /var/lib/rancher/k3s/server/manifests || true"
+	ExecStartPost=/bin/sh -c "[ -f /root/kube-vip.yaml ] && mv /root/kube-vip.yaml /var/lib/rancher/k3s/server/manifests/kube-vip.yaml || true"
+	ExecStartPost=/bin/sh -c "[ -f /var/lib/rancher/k3s/server/manifests/kube-vip.yaml ] && chcon -t container_var_lib_t /var/lib/rancher/k3s/server/manifests/kube-vip.yaml || true"
 	# Disable & delete everything
 	ExecStartPost=rm -f /usr/local/bin/k3s_installer.sh
 	ExecStartPost=/bin/sh -c "systemctl disable k3s_installer"
@@ -108,12 +108,12 @@ if [ "${CLUSTER}" == "rke2" ]; then
 	# update path in exec start post to include rke2 bin path
 	ExecStartPost=/bin/sh -c "echo 'export KUBECONFIG=/etc/rancher/rke2/rke2.yaml' >> ~/.bashrc ; echo 'export PATH=${PATH}:/var/lib/rancher/rke2/bin' >> ~/.bashrc ; source ~/.bashrc"
 	# Load the proper modules for kube-vip lb to work
-	ExecStartPost=/bin/sh -c "[ -f /root/ipvs.conf ] && mv /root/ipvs.conf /etc/modules-load.d/ipvs.conf"
-	ExecStartPost=/bin/sh -c "[ -f /etc/modules-load.d/ipvs.conf ] && systemctl restart systemd-modules-load"
+	ExecStartPost=/bin/sh -c "[ -f /root/ipvs.conf ] && mv /root/ipvs.conf /etc/modules-load.d/ipvs.conf || true"
+	ExecStartPost=/bin/sh -c "[ -f /etc/modules-load.d/ipvs.conf ] && systemctl restart systemd-modules-load || true"
 	# Move the kube-vip file if exists
 	ExecStartPost=/bin/sh -c "mkdir -p /var/lib/rancher/rke2/server/manifests"
-	ExecStartPost=/bin/sh -c "[ -f /root/kube-vip.yaml ] && mv /root/kube-vip.yaml /var/lib/rancher/rke2/server/manifests/kube-vip.yaml"
-	ExecStartPost=/bin/sh -c "[ -f /var/lib/rancher/rke2/server/manifests/kube-vip.yaml ] && chcon -t container_var_lib_t /var/lib/rancher/rke2/server/manifests/kube-vip.yaml"
+	ExecStartPost=/bin/sh -c "[ -f /root/kube-vip.yaml ] && mv /root/kube-vip.yaml /var/lib/rancher/rke2/server/manifests/kube-vip.yaml || true"
+	ExecStartPost=/bin/sh -c "[ -f /var/lib/rancher/rke2/server/manifests/kube-vip.yaml ] && chcon -t container_var_lib_t /var/lib/rancher/rke2/server/manifests/kube-vip.yaml || true"
 	# Disable & delete everything
 	ExecStartPost=rm -f /usr/local/bin/rke2_installer.sh
 	ExecStartPost=/bin/sh -c "systemctl disable rke2_installer"
