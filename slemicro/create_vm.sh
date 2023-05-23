@@ -164,8 +164,12 @@ elif [ $(uname -o) == "GNU/Linux" ]; then
 	# Give libvirt group permissions for both the disk an the ISO
 	chmod 0664 ${VMFOLDER}/${VMNAME}.qcow2 ${VMFOLDER}/ignition-and-combustion-${VMNAME}.iso
 	chgrp libvirt ${VMFOLDER}/${VMNAME}.qcow2 ${VMFOLDER}/ignition-and-combustion-${VMNAME}.iso
+	# By default virt-install powers off the VM when rebooted once.
+	# As a workaround, create the VM definition, change the on_reboot behaviour
+	# and start the VM
+	# See https://bugzilla.redhat.com/show_bug.cgi?id=1792411 for the print-xml 1 reason :)
+	VIRTFILE=$(mktemp)
 	virt-install --name ${VMNAME} \
-		--autostart \
 		--noautoconsole \
 		--memory ${MEMORY} \
 		--vcpus ${CPUS} \
@@ -173,7 +177,12 @@ elif [ $(uname -o) == "GNU/Linux" ]; then
 		--import \
 		--cdrom ${VMFOLDER}/ignition-and-combustion-${VMNAME}.iso \
 		--network network=default \
-		--osinfo detect=on,name=sle-unknown
+		--osinfo detect=on,name=sle-unknown \
+		--print-xml 1 > ${VIRTFILE}
+	sed -i -e 's#<on_reboot>destroy</on_reboot>#<on_reboot>restart</on_reboot>#g' ${VIRTFILE}
+	virsh define ${VIRTFILE}
+	virsh start ${VMNAME}
+	rm -f ${VIRTFILE}
 	echo "VM created. Waiting for IP..."
 	timeout=180
 	count=0
