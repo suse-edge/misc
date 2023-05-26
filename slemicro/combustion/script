@@ -98,12 +98,14 @@ if [ "${CLUSTER}" == "rke2" ]; then
 	User=root
 	Type=forking
 	TimeoutStartSec=600
-	Environment="INSTALL_RKE2_EXEC=${INSTALL_CLUSTER_EXEC}"
+	Environment="INSTALL_RKE2_TYPE=${INSTALL_CLUSTER_EXEC}"
 	Environment="INSTALL_RKE2_VERSION=${INSTALL_CLUSTER_VERSION}"
 	Environment="RKE2_TOKEN=${CLUSTER_TOKEN}"
 	ExecStart=/usr/local/bin/rke2_installer.sh
 	RemainAfterExit=yes
 	KillMode=process
+	# Load proper exec params to the rke2 service
+	# ExecStartPost=/bin/sh -c "sed -i 's#^ExecStart=/opt/rke2/bin/rke2 server#ExecStart=/opt/rke2/bin/rke2 ${INSTALL_CLUSTER_EXEC}#' /etc/systemd/system/rke2-server.service"
 	ExecStartPost=/bin/sh -c "systemctl enable --now rke2-server.service; systemctl start --no-block --now rke2-server.service"
 	# update path in exec start post to include rke2 bin path
 	ExecStartPost=/bin/sh -c "echo 'export KUBECONFIG=/etc/rancher/rke2/rke2.yaml' >> ~/.bashrc ; echo 'export PATH=${PATH}:/var/lib/rancher/rke2/bin' >> ~/.bashrc ; source ~/.bashrc"
