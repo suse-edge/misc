@@ -45,7 +45,7 @@ if [ "${CLUSTER}" == "rke2" ]; then
 	EOF
 
 	# RKE2 doesn't suport INSTALL_RKE2_EXEC it seems... but a systemd override works
-	if [[ ${INSTALL_CLUSTER_EXEC} == "server*" ]]; then
+	if [[ "${INSTALL_CLUSTER_EXEC}" == "server*" ]]; then
 		TYPE="server"
 	else
 		TYPE="agent"
