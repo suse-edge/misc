@@ -101,8 +101,17 @@ if [ -f ${BASEDIR}/combustion/script ]; then
 		export SSHCONFIG=true
 		export SSHCONTENT=$(cat ${SSHPUB})
 	fi
-	# Copy it to the final iso destination parsing the vars
+
+	# Parse the file and copy it to the final ISO
 	envsubst < ${BASEDIR}/combustion/script > ${TMPDIR}/combustion/script
+	
+	# Copy all combustion related files to the final iso destination parsing the vars
+	for file in ${BASEDIR}/combustion/*.sh; do
+		FILENAME=$(basename ${file})
+		envsubst < ${file} > ${TMPDIR}/combustion/${FILENAME}
+		chmod a+x ${TMPDIR}/combustion/${FILENAME}
+		echo "./${FILENAME}" >> ${TMPDIR}/combustion/script
+	done
 fi
 
 # Create an iso
