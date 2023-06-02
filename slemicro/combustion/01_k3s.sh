@@ -6,7 +6,7 @@ if [ "${CLUSTER}" == "k3s" ]; then
 	# Mount /usr/local to store the k3s script
 	mount /usr/local || true
 	# Stolen from https://code.opensuse.org/adathor/combustion-dotconf/blob/main/f/K3s%20cluster/k3s_master/script
-		# Download and install the latest k3s installer
+	# Download and install the latest k3s installer
 	curl -L --output k3s_installer.sh https://get.k3s.io && install -m755 k3s_installer.sh /usr/local/bin/
 	# Create a systemd unit that installs k3s if not installed yet. The k3s service is started after the installation
 	cat <<- EOF > /etc/systemd/system/k3s_installer.service
