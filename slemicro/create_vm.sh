@@ -192,7 +192,8 @@ elif [ $(uname -o) == "GNU/Linux" ]; then
 	virsh define ${VIRTFILE}
 	virsh start ${VMNAME}
 	rm -f ${VIRTFILE}
-	echo "VM created. Waiting for IP..."
+	echo "VM started. You can connect to the serial terminal as: virsh console ${VMNAME}"
+	echo -n "Waiting for IP..."
 	timeout=180
 	count=0
 	while [ $(virsh domifaddr ${VMNAME} | awk -F'[ /]+' '/ipv/ {print $5}' | wc -l) -ne 1 ]; do
