@@ -48,61 +48,65 @@ NOTE: They can be installed using `brew`
 
 ### Enviroment variables
 
-It requires a few enviroment variables to be set to customize it. Store them in the script basedir as `.env`
+It requires a few enviroment variables to be set to customize it.
+
+They can be stored in the script basedir as `.env` or in any file and use the `-f path/to/the/variables` flag.
+
+**NOTE**: There is a `vm*` pattern already in the `.gitignore` file so you can conviniently name your VM parameters file as `vm-foobar` and they won't be added to git. 
 
 ```bash
 cat << EOF > ${BASEDIR}/.env
 # If required to register to https://scc.suse.com
-export REGISTER=true
+REGISTER=true
 # Email & regcode for the registration
-export EMAIL="foo@bar.com"
-export REGCODE="ASDF-1"
+EMAIL="foo@bar.com"
+REGCODE="ASDF-1"
 # SLE Micro image
-export SLEMICROFILE="${HOME}/Downloads/SLE-Micro.aarch64-5.3.0-Default-GM.raw"
+SLEMICROFILE="${HOME}/Downloads/SLE-Micro.aarch64-5.3.0-Default-GM.raw"
 # Folder where the VM will be hosted
-export VMFOLDER="${HOME}/VMs"
+VMFOLDER="${HOME}/VMs"
 # VM & Hostname
-export VMNAME="SLEMicro"
+VMNAME="SLEMicro"
 # Selfexplanatory
-export CPUS=4
-export MEMORY=4096
-export DISKSIZE=30
+CPUS=4
+MEMORY=4096
+DISKSIZE=30
 # Location of the ssh key file to be copied to /root/.ssh/authorized_keys
-export SSHPUB="${HOME}/.ssh/id_rsa.pub"
+SSHPUB="${HOME}/.ssh/id_rsa.pub"
 # Enable KUBEVIP to manage a VIP for K3s API
-export KUBEVIP=true
+KUBEVIP=true
 # Set the VIP
-export VIP="192.168.205.10"
+VIP="192.168.205.10"
 # Set it to false if you don't want K3s or rke2 to be deployed ["k3s"|"rke2"|false]
-export CLUSTER="k3s"
+CLUSTER="k3s"
 # Specify a k3s or rke2 cluster version ["v1.25.8+k3s1"|"v1.25.9+rke2r1"]
-export INSTALL_CLUSTER_VERSION="v1.25.8+k3s1"
+INSTALL_CLUSTER_VERSION="v1.25.8+k3s1"
 # For the first node in an HA environment. This INSTALL_CLUSTER_EXEC will be translated to INSTALL_K3S_EXEC or INSTALL_RKE2_EXEC depending on the value of CLUSTER
-# export INSTALL_CLUSTER_EXEC="server --cluster-init --write-kubeconfig-mode=644 --tls-san=${VIP} --tls-san=${VIP}.sslip.io"
+# INSTALL_CLUSTER_EXEC="server --cluster-init --write-kubeconfig-mode=644 --tls-san=${VIP} --tls-san=${VIP}.sslip.io"
 # For a single node. This INSTALL_CLUSTER_EXEC will be translated to INSTALL_K3S_EXEC or INSTALL_RKE2_EXEC depending on the value of CLUSTER
-export INSTALL_CLUSTER_EXEC="server --cluster-init --write-kubeconfig-mode=644"
+INSTALL_CLUSTER_EXEC="server --cluster-init --write-kubeconfig-mode=644"
 # To add control plane nodes. This INSTALL_CLUSTER_EXEC will be translated to INSTALL_K3S_EXEC or INSTALL_RKE2_EXEC depending on the value of CLUSTER:
-# export INSTALL_CLUSTER_EXEC="server --server https://${VIP}:6443 --write-kubeconfig-mode=644"
+# INSTALL_CLUSTER_EXEC="server --server https://${VIP}:6443 --write-kubeconfig-mode=644"
 # To add worker nodes. This INSTALL_CLUSTER_EXEC will be translated to INSTALL_K3S_EXEC or INSTALL_RKE2_EXEC depending on the value of CLUSTER:
-# export INSTALL_CLUSTER_EXEC="agent --server https://${VIP}:6443"
+# INSTALL_CLUSTER_EXEC="agent --server https://${VIP}:6443"
 # Cluster token to be used to add more hosts and it will be translated to K3S_TOKEN or RKE2_TOKEN depending on the value of CLUSTER
-export CLUSTER_TOKEN="foobar"
+CLUSTER_TOKEN="foobar"
 # Set it to the Rancher flavor you want to install "stable", "latest", "alpha", "prime" or just false to disable it
-export RANCHERFLAVOR="latest"
+RANCHERFLAVOR="latest"
 # Initial Rancher bootstrap password
-export RANCHERBOOTSTRAPPASSWORD="admin"
+RANCHERBOOTSTRAPPASSWORD="admin"
 # Enable to skip the rancher bootstrap phase
-export RANCHERBOOTSTRAPSKIP="true"
+RANCHERBOOTSTRAPSKIP="true"
 # Final Rancher password
-export RANCHERFINALPASSWORD="adminadminadmin"
+RANCHERFINALPASSWORD="adminadminadmin"
 # Deploy elemental on rancher
-export ELEMENTAL=true
+ELEMENTAL=true
 # Enable cockpit
-export COCKPIT=true
+COCKPIT=true
 # Enable podman
-export PODMAN=true
+PODMAN=true
 # Update to latest packages and reboot if needed (zypper needs-reboot)
-export UPDATEANDREBOOT=true
+UPDATEANDREBOOT=true
 EOF
 ```
 
@@ -118,19 +122,43 @@ VM IP: 192.168.206.60
 After Rancher is installed, you can access the Web UI as https://192.168.206.60.sslip.io
 ```
 
-You could also pass as a parameter the name of the VM to be used overriding the default one.
+You could also use the `-f` parameter to specify a path where the variables are stored or `-n` to override the name of the VM to be used:
 
 ```bash
-$ ./create_vm.sh mynewvm
-VM started. You can connect to the serial terminal as: screen /dev/ttys001
-Waiting for IP: ................
-VM IP: 192.168.206.60
-After Rancher is installed, you can access the Web UI as https://192.168.206.60.sslip.io
+$ ./create_vm.sh -h
+Usage: ./create_vm.sh [-f <path/to/variables/file>] [-n <vmname>]
+```
+
+### Multiple VMs
+
+Using the `-f` flag, you can have multiple VM parameter files and create a cluster easily:
+
+```bash
+$ grep ^INSTALL_CLUSTER_EXEC vm-*
+vm-master-0:INSTALL_CLUSTER_EXEC="server --cluster-init --write-kubeconfig-mode=644 --tls-san=${VIP} --tls-san=${VIP}.sslip.io"
+vm-master-1:INSTALL_CLUSTER_EXEC="server --server https://192.168.205.10:6443 --write-kubeconfig-mode=644"
+vm-master-2:INSTALL_CLUSTER_EXEC="server --server https://192.168.205.10:6443 --write-kubeconfig-mode=644"
+vm-worker-0:INSTALL_CLUSTER_EXEC="agent --server https://192.168.205.10:6443"
+vm-worker-1:INSTALL_CLUSTER_EXEC="agent --server https://192.168.205.10:6443"
+
+for file in vm-*; do ./create_vm.sh -f ${file}; done
+
+# after a while
+
+master-0:~ # kubectl get nodes
+NAME       STATUS   ROLES                       AGE   VERSION
+master-0   Ready    control-plane,etcd,master   99s   v1.25.9+k3s1
+master-1   Ready    control-plane,etcd,master   51s   v1.25.9+k3s1
+master-2   Ready    control-plane,etcd,master   37s   v1.25.9+k3s1
+worker-0   Ready    <none>                      25s   v1.25.9+k3s1
+worker-1   Ready    <none>                      15s   v1.25.9+k3s1
 ```
 
 ## delete_vm.sh
 
 This script is intended to easily delete the previously SLE Micro VM created with the `create_vm.sh` script.
+
+You can use the same `-f` or `-n` parameters as well.
 
 :warning: There is no confirmation whatsoever!
 
@@ -146,4 +174,9 @@ The previous environment variables can be used but it requires a few less.
 
 ```bash
 $ ./delete_vm.sh
+```
+
+```bash
+$ ./delete_vm.sh -h
+Usage: ./delete_vm.sh [-f <path/to/variables/file>] [-n <vmname>]
 ```

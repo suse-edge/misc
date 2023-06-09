@@ -3,15 +3,38 @@ set -euo pipefail
 BASEDIR="$(dirname "$0")"
 
 die(){
-	echo ${1}
+	echo ${1} 1>&2
 	exit ${2}
 }
 
+usage(){
+	cat <<-EOF
+	Usage: ${0} [-f <path/to/variables/file>] [-n <vmname>]
+	EOF
+}
+
+while getopts 'f:n:h' OPTION; do
+	case "${OPTION}" in
+		f)
+			[ -f "${OPTARG}" ] && ENVFILE="${OPTARG}" || die "Parameters file ${OPTARG} not found" 2
+			;;
+		n)
+			VMNAME="${OPTARG}"
+			;;
+		h)
+			usage && exit 0
+			;;
+		?)
+			usage && die "Parameter ${OPTION} wrong" 3
+			;;
+	esac
+done
+
+set -a
 # Get the env file
-source ${BASEDIR}/.env
-if [ $# -eq 1 ]; then
-	VMNAME=$1
-fi
+source ${ENVFILE:-${BASEDIR}/.env}
+set +a
+
 VMFOLDER="${VMFOLDER:-~/VMs}"
 
 if [ $(uname -o) == "Darwin" ]; then
