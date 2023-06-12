@@ -25,7 +25,7 @@ while getopts 'f:n:h' OPTION; do
 			usage && exit 0
 			;;
 		?)
-			usage && die "Parameter ${OPTION} wrong" 3
+			usage && exit 2
 			;;
 	esac
 done
