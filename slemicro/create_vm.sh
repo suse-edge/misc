@@ -3,18 +3,39 @@ set -euo pipefail
 BASEDIR="$(dirname "$0")"
 
 die(){
-	echo ${1}
+	echo ${1} 1>&2
 	exit ${2}
 }
 
+usage(){
+	cat <<-EOF
+	Usage: ${0} [-f <path/to/variables/file>] [-n <vmname>]
+	EOF
+}
+
+while getopts 'f:n:h' OPTION; do
+	case "${OPTION}" in
+		f)
+			[ -f "${OPTARG}" ] && ENVFILE="${OPTARG}" || die "Parameters file ${OPTARG} not found" 2
+			;;
+		n)
+			VMNAME="${OPTARG}"
+			;;
+		h)
+			usage && exit 0
+			;;
+		?)
+			usage && exit 2
+			;;
+	esac
+done
+
+set -a
 # Get the env file
-source ${BASEDIR}/.env
+source ${ENVFILE:-${BASEDIR}/.env}
+set +a
 
-if [ $# -eq 1 ]; then
-	VMNAME=$1
-fi
 VMFOLDER="${VMFOLDER:-~/VMs}"
-
 
 if [ $(uname -o) == "Darwin" ]; then
 	# Check if UTM version is 4.2.2 (required for the scripting part)
@@ -140,7 +161,7 @@ if [ $(uname -o) == "Darwin" ]; then
 	END
 	)
 
-	echo "VM started. You can connect to the serial terminal as: screen ${OUTPUT}"
+	echo "VM ${VMNAME} started. You can connect to the serial terminal as: screen ${OUTPUT}"
 
 	OUTPUT=$(osascript <<-END
 	tell application "UTM"
@@ -192,7 +213,7 @@ elif [ $(uname -o) == "GNU/Linux" ]; then
 	virsh define ${VIRTFILE}
 	virsh start ${VMNAME}
 	rm -f ${VIRTFILE}
-	echo "VM started. You can connect to the serial terminal as: virsh console ${VMNAME}"
+	echo "VM ${VMNAME} started. You can connect to the serial terminal as: virsh console ${VMNAME}"
 	echo -n "Waiting for IP..."
 	timeout=180
 	count=0
