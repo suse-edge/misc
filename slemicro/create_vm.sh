@@ -73,6 +73,11 @@ if [ "${REGISTER}" == false ] && [ "${RANCHERBOOTSTRAPSKIP}" == true ]; then
 	die "RANCHERBOOTSTRAPSKIP requires REGISTER" 3
 fi
 
+# qemu-guest-agent requires register as well
+if [ "${REGISTER}" == false ] && [ "${QEMUGUESTAGENT}" == true ]; then
+	die "QEMUGUESTAGENT requires REGISTER" 3
+fi
+
 # Check if cluster installation to set correct path to kubeconfig and kubectl
 case ${CLUSTER} in
 	"k3s")

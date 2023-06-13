@@ -99,6 +99,8 @@ RANCHERBOOTSTRAPPASSWORD="admin"
 RANCHERBOOTSTRAPSKIP="true"
 # Final Rancher password
 RANCHERFINALPASSWORD="adminadminadmin"
+# Set it to sync the VM clock.
+QEMUGUESTAGENT=true
 # Deploy elemental on rancher
 ELEMENTAL=true
 # Enable cockpit
