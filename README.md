@@ -21,5 +21,5 @@ A miscelaneous repository that contains scripts, tools and other assets from the
 # Scripts
 | Script | Description |
 | - | - |
-| [slemicro/create_vm.sh](slemicro/create_vm.sh) |  Create a SLE Micro VM on OSX aarch64 using UTM and customized via ignition/combustion |
-| [slemicro/delete_vm.sh](slemicro/delete_vm.sh) |  Delete a SLE Micro VM on OSX aarch64 using UTM |
+| [slemicro/create_vm.sh](slemicro/create_vm.sh) |  Create a SLE Micro VM on OSX (via UTM) or Linux (via libvirt) customized via ignition/combustion |
+| [slemicro/delete_vm.sh](slemicro/delete_vm.sh) |  Delete a SLE Micro VM on OSX (via UTM) or Linux (via libvirt), previously deployed with the [slemicro/create_vm.sh](slemicro/create_vm.sh) script |

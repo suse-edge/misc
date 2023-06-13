@@ -48,7 +48,7 @@ NOTE: They can be installed using `brew`
 
 ### Enviroment variables
 
-It requires a few enviroment variables to be set to customize it, the bare minimum are:
+It requires a few enviroment variables to be set to customize it, the bare minimum are (see [env-minimal.example](env-minimal.example)):
 
 ```
 # SLE Micro image
