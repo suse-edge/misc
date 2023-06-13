@@ -154,6 +154,8 @@ worker-0   Ready    <none>                      25s   v1.25.9+k3s1
 worker-1   Ready    <none>                      15s   v1.25.9+k3s1
 ```
 
+**TIP:** To run the VM creation in parallel you can use `for file in vm-*; do ./create_vm.sh -f ${file} &; done; wait` (the output will be a little bit messy however)
+
 ## delete_vm.sh
 
 This script is intended to easily delete the previously SLE Micro VM created with the `create_vm.sh` script.
@@ -179,4 +181,16 @@ $ ./delete_vm.sh
 ```bash
 $ ./delete_vm.sh -h
 Usage: ./delete_vm.sh [-f <path/to/variables/file>] [-n <vmname>]
+```
+
+For multiple VMs:
+
+```bash
+for file in vm-*; do ./delete_vm.sh -f ${file}; done
+```
+
+For multiple VMs in parallel:
+
+```bash
+for file in vm-*; do ./delete_vm.sh -f ${file} &; done; wait
 ```
