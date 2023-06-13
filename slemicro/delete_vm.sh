@@ -33,9 +33,9 @@ done
 set -a
 # Get the env file
 source ${ENVFILE:-${BASEDIR}/.env}
+# Some defaults just in case
+VMNAME="${VMNAME:-slemicro}"
 set +a
-
-VMFOLDER="${VMFOLDER:-~/VMs}"
 
 if [ $(uname -o) == "Darwin" ]; then
 # Stop and delete the VM using UTM

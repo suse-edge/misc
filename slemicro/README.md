@@ -48,7 +48,14 @@ NOTE: They can be installed using `brew`
 
 ### Enviroment variables
 
-It requires a few enviroment variables to be set to customize it.
+It requires a few enviroment variables to be set to customize it, the bare minimum are:
+
+```
+# SLE Micro image
+SLEMICROFILE="${HOME}/Downloads/SLE-Micro.aarch64-5.3.0-Default-GM.raw"
+# Folder where the VM will be hosted
+VMFOLDER="${HOME}/VMs"
+```
 
 They can be stored in the script basedir as `.env` or in any file and use the `-f path/to/the/variables` flag.
 

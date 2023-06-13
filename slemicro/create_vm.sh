@@ -33,9 +33,20 @@ done
 set -a
 # Get the env file
 source ${ENVFILE:-${BASEDIR}/.env}
+# Some defaults just in case
+CPUS="${CPUS:-2}"
+MEMORY="${MEMORY:-2048}"
+DISKSIZE="${DISKSIZE:-30}"
+SSHPUB="${SSHPUB:-${HOME}/.ssh/id_rsa.pub}"
+VMNAME="${VMNAME:-slemicro}"
+REGISTER="${REGISTER:-false}"
+RANCHERBOOTSTRAPSKIP="${RANCHERBOOTSTRAPSKIP:-false}"
+CLUSTER="${CLUSTER:-false}"
+COCKPIT="${COCKPIT:-false}"
+RANCHERFLAVOR="${RANCHERFLAVOR:-false}"
+UPDATEANDREBOOT="${UPDATEANDREBOOT:-false}"
+QEMUGUESTAGENT="${QEMUGUESTAGENT:-false}"
 set +a
-
-VMFOLDER="${VMFOLDER:-~/VMs}"
 
 if [ $(uname -o) == "Darwin" ]; then
 	# Check if UTM version is 4.2.2 (required for the scripting part)
@@ -63,14 +74,16 @@ if [ "${REGISTER}" == true ]; then
 	[ -z "${REGCODE}" ] && die "REGCODE variable not found" 2
 fi
 
-# Check if RANCHERFINALPASSWORD exist
-if [[ -n "${RANCHERFINALPASSWORD}" && ${#RANCHERFINALPASSWORD} -lt 12 ]]; then
-	die "RANCHERFINALPASSWORD variable needs to be >12 characters long" 3
-fi
-
-# Bootstrapskip requires installing jq... hence registering :(
-if [ "${REGISTER}" == false ] && [ "${RANCHERBOOTSTRAPSKIP}" == true ]; then
-	die "RANCHERBOOTSTRAPSKIP requires REGISTER" 3
+# Bootstraping rancher requires a few things
+if [ "${RANCHERBOOTSTRAPSKIP}" == true ]; then
+	# Bootstrapskip requires installing jq... hence registering :(
+	if [ "${REGISTER}" == false ]; then
+		die "RANCHERBOOTSTRAPSKIP requires REGISTER" 3
+	fi
+	# Check if RANCHERFINALPASSWORD exist
+	if [[ -n "${RANCHERFINALPASSWORD}" && ${#RANCHERFINALPASSWORD} -lt 12 ]]; then
+		die "RANCHERFINALPASSWORD variable needs to be >12 characters long" 3
+	fi
 fi
 
 # qemu-guest-agent requires register as well
