@@ -31,8 +31,8 @@ if [ "${RANCHERBOOTSTRAPSKIP}" = true ]; then
 	# Set password
 	curl -sk $${q}HOST/v3/users?action=changepassword -H 'content-type: application/json' -H "Authorization: Bearer $${q}TOKEN" -d '{"currentPassword":"${RANCHERBOOTSTRAPPASSWORD}","newPassword":"${RANCHERFINALPASSWORD}"}'
 
-	# Get API token
-	APITOKEN=$(curl -sk $${q}HOST/v3/token -H 'content-type: application/json' -H "Authorization: Bearer $${q}TOKEN" -d '{"type":"token","description":"automation"}' | jq -r .token)
+	# Create a temporary API token (ttl=60 minutes)
+	APITOKEN=$(curl -sk $${q}HOST/v3/token -H 'content-type: application/json' -H "Authorization: Bearer $${q}TOKEN" -d '{"type":"token","description":"automation","ttl":3600000}' | jq -r .token)
 
 	curl -sk $${q}HOST/v3/settings/server-url -H 'content-type: application/json' -H "Authorization: Bearer $${q}APITOKEN" -X PUT -d "{\"name\":\"server-url\",\"value\":\"$${q}HOST\"}"
 	curl -sk $${q}HOST/v3/settings/telemetry-opt -X PUT -H 'content-type: application/json' -H 'accept: application/json' -H "Authorization: Bearer $${q}APITOKEN" -d '{"value":"out"}'
