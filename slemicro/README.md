@@ -240,16 +240,7 @@ Usage: ./get_kubeconfig.sh [-f <path/to/variables/file>] [-n <vmname>] [-i <vmip
 
 You can use the script in combination with the `create_vm.sh` one as:
 
-* For Rancher based installations:
-
 ```bash
-$ RANCHER=$(./create_vm.sh -f foobar | awk "/After Rancher/ { print $12 }") 
-$ KUBECONFIG=$(./get_kubeconfig.sh -w -f vm-foobar)
-```
-
-* For non-Rancher based installations:
-
-```bash
-$ VMIP=$(./create_vm.sh -f foobar | awk "/VM IP/ { print $3 }" )
+$ ./create_vm.sh -f vm-foobar
 $ KUBECONFIG=$(./get_kubeconfig.sh -w -f vm-foobar)
 ```
