@@ -9,11 +9,17 @@ die(){
 
 usage(){
 	cat <<-EOF
-	Usage: ${0} [-f <path/to/variables/file>] [-n <vmname>] [-i <ip>]
+	Usage: ${0} [-f <path/to/variables/file>] [-n <vmname>] [-i <ip>] [-w]
+	
+	Options:
+	 -f		(Optional) Path to the variables file
+	 -n		(Optional) Virtual machine name
+	 -i		(Optional) Virtual machine IP
+	 -w		(Optional) Wait for the API/Rancher to be available
 	EOF
 }
 
-while getopts 'f:n:i:h' OPTION; do
+while getopts 'f:n:i:wh' OPTION; do
 	case "${OPTION}" in
 		f)
 			[ -f "${OPTARG}" ] && ENVFILE="${OPTARG}" || die "Parameters file ${OPTARG} not found" 2
@@ -23,6 +29,9 @@ while getopts 'f:n:i:h' OPTION; do
 			;;
 		i)
 			VMIP="${OPTARG}"
+			;;
+		w)
+			WAIT=true
 			;;
 		h)
 			usage && exit 0
@@ -42,6 +51,7 @@ RANCHERFLAVOR="${RANCHERFLAVOR:-false}"
 RANCHERFINALPASSWORD="${RANCHERFINALPASSWORD:-false}"
 CLUSTER="${CLUSTER:-false}"
 VMIP="${VMIP:-false}"
+WAIT="${WAIT:-false}"
 set +a
 
 if [ ${VMIP} == false ]; then
@@ -90,6 +100,9 @@ if [ ${RANCHERFLAVOR} == false ]; then
 			die "CLUSTER variable not supported" 2
 			;;
 	esac
+	if [ ${WAIT} == true ]; do
+		while ! curl -sk https://${VMIP}:6443; do sleep 10; done
+	fi
 	# TODO: remove the hardcoded user
 	scp root@${VMIP}:${KUBECONFIG} ${TMPKUBECONFIG}
 	if [ $(uname -o) == "Darwin" ]; then
@@ -101,6 +114,10 @@ if [ ${RANCHERFLAVOR} == false ]; then
 	fi
 
 else
+	if [ ${WAIT} == true ]; do
+		while ! curl -sk https://${VMIP}.sslip.io; do sleep 10; done
+	fi
+	
 	# via rancher
 	[ ${RANCHERFINALPASSWORD} == false ] && die "RANCHERFINALPASSWORD not provided" 2
 

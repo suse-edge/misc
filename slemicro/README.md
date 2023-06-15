@@ -216,7 +216,7 @@ This script is intended to easily get the Kubeconfig file of the K3s/RKE2 cluste
 
 If Rancher is not deployed, it tries to get the Kubeconfig file via ssh, otherwise it leverages the Rancher API.
 
-You can use the same `-f` or `-n` parameters as well, and an extra `-i` parameter to specify the IP manually.
+You can use the same `-f` or `-n` parameters as well, an extra `-i` parameter to specify the IP manually or the `-w` flag that will wait until the kubeconfig is available.
 
 ### Prerequisites
 
@@ -244,14 +244,12 @@ You can use the script in combination with the `create_vm.sh` one as:
 
 ```bash
 $ RANCHER=$(./create_vm.sh -f foobar | awk "/After Rancher/ { print $12 }") 
-$ while ! curl -sk ${RANCHER}; do sleep 10; done
-$ KUBECONFIG=$(./get_kubeconfig.sh -f vm-foobar)
+$ KUBECONFIG=$(./get_kubeconfig.sh -w -f vm-foobar)
 ```
 
 * For non-Rancher based installations:
 
 ```bash
 $ VMIP=$(./create_vm.sh -f foobar | awk "/VM IP/ { print $3 }" )
-$ while ! curl -sk https://${VMIP}:6443; do sleep 10; done
-$ KUBECONFIG=$(./get_kubeconfig.sh -f vm-foobar)
+$ KUBECONFIG=$(./get_kubeconfig.sh -w -f vm-foobar)
 ```
