@@ -116,7 +116,6 @@ if [ ${RANCHERFLAVOR} == false ]; then
 else
 	# via rancher
 	[ ${RANCHERFINALPASSWORD} == false ] && die "RANCHERFINALPASSWORD not provided" 2
-	
 	# Check if the commands required exist
 	command -v jq > /dev/null 2>&1 || die "jq not found" 2
 
