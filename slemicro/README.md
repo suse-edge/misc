@@ -120,6 +120,8 @@ COCKPIT=true
 PODMAN=true
 # Update to latest packages and reboot if needed (zypper needs-reboot)
 UPDATEANDREBOOT=true
+# Disable IPv6
+DISABLEIPV6=true
 EOF
 ```
 
