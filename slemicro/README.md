@@ -248,7 +248,7 @@ $ while ! curl -sk ${RANCHER}; do sleep 10; done
 $ KUBECONFIG=$(./get_kubeconfig.sh -f vm-foobar)
 ```
 
-* For no Rancher:
+* For non-Rancher based installations:
 
 ```bash
 $ VMIP=$(./create_vm.sh -f foobar | awk "/VM IP/ { print $3 }" )
