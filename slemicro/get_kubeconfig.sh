@@ -81,9 +81,6 @@ if [ ${VMIP} == false ]; then
 	fi
 fi
 
-# Create a temp file
-TMPKUBECONFIG=$(mktemp)
-
 if [ ${RANCHERFLAVOR} == false ]; then
 	# via ssh
 	case ${CLUSTER} in
@@ -101,10 +98,13 @@ if [ ${RANCHERFLAVOR} == false ]; then
 			;;
 	esac
 	if [ ${WAIT} == true ]; then
-		while ! curl -sk https://${VMIP}:6443; do sleep 10; done
+		# Wait until K3s API answer back with 401 unauthorized code
+		while ! [ "$(curl -s -w '%{http_code}' -k -o /dev/null https://${VMIP}:6443)" -eq 401 ]; do sleep 10; done
 	fi
+	# Create a temp file
+	TMPKUBECONFIG=$(mktemp)
 	# TODO: remove the hardcoded user
-	scp root@${VMIP}:${KUBECONFIG} ${TMPKUBECONFIG}
+	scp root@${VMIP}:${KUBECONFIG} ${TMPKUBECONFIG} > /dev/null
 	if [ $(uname -o) == "Darwin" ]; then
 		sed -i "" "s/127.0.0.1/${VMIP}/g" ${TMPKUBECONFIG}
 	elif [ $(uname -o) == "GNU/Linux" ]; then
@@ -114,23 +114,24 @@ if [ ${RANCHERFLAVOR} == false ]; then
 	fi
 
 else
-	if [ ${WAIT} == true ]; then
-		while ! curl -sk https://${VMIP}.sslip.io; do sleep 10; done
-	fi
-	
 	# via rancher
 	[ ${RANCHERFINALPASSWORD} == false ] && die "RANCHERFINALPASSWORD not provided" 2
-
 	# Check if the commands required exist
 	command -v jq > /dev/null 2>&1 || die "jq not found" 2
 
+	if [ ${WAIT} == true ]; then
+		# Wait until Rancher API answer back with healthz 200
+		while ! [ "$(curl -s -w '%{http_code}' -k -o /dev/null https://${VMIP}.sslip.io/healthz)" -eq 200 ]; do sleep 10; done
+	fi
+	
 	# Login
 	TOKEN=$(curl -sk -X POST https://${VMIP}.sslip.io/v3-public/localProviders/local?action=login -H 'content-type: application/json' -d "{\"username\":\"admin\",\"responseType\": \"token\", \"password\": \"${RANCHERFINALPASSWORD}\"}" | jq -r .token)
 
+	# Create a temp file
+	TMPKUBECONFIG=$(mktemp)
 	# Get the kubeconfig
 	# TODO: The following API call creates a token that doesn't expire https://github.com/rancher/rancher/issues/37705
-	GENERATEDKUBECONFIG=$(curl -sk "https://${VMIP}.sslip.io/v3/clusters/local?action=generateKubeconfig" -X 'POST' -H 'content-type: application/json' -H "Authorization: Bearer ${TOKEN}")
-	echo ${GENERATEDKUBECONFIG} | jq -r .config > ${TMPKUBECONFIG}
+	curl -sk "https://${VMIP}.sslip.io/v3/clusters/local?action=generateKubeconfig" -X 'POST' -H 'content-type: application/json' -H "Authorization: Bearer ${TOKEN}" | jq -r .config > ${TMPKUBECONFIG} 
 fi
 
 echo ${TMPKUBECONFIG}

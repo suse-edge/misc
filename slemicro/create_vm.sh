@@ -46,6 +46,7 @@ COCKPIT="${COCKPIT:-false}"
 RANCHERFLAVOR="${RANCHERFLAVOR:-false}"
 UPDATEANDREBOOT="${UPDATEANDREBOOT:-false}"
 QEMUGUESTAGENT="${QEMUGUESTAGENT:-false}"
+DISABLEIPV6="${DISABLEIPV6:-true}"
 set +a
 
 if [ $(uname -o) == "Darwin" ]; then
