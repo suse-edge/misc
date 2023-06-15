@@ -100,7 +100,7 @@ if [ ${RANCHERFLAVOR} == false ]; then
 			die "CLUSTER variable not supported" 2
 			;;
 	esac
-	if [ ${WAIT} == true ]; do
+	if [ ${WAIT} == true ]; then
 		while ! curl -sk https://${VMIP}:6443; do sleep 10; done
 	fi
 	# TODO: remove the hardcoded user
@@ -114,7 +114,7 @@ if [ ${RANCHERFLAVOR} == false ]; then
 	fi
 
 else
-	if [ ${WAIT} == true ]; do
+	if [ ${WAIT} == true ]; then
 		while ! curl -sk https://${VMIP}.sslip.io; do sleep 10; done
 	fi
 	
