@@ -20,6 +20,10 @@
   - [Prerequisites](#prerequisites-1)
   - [Enviroment variables](#enviroment-variables-1)
   - [Usage](#usage-1)
+- [get\_kubeconfig.sh](#get_kubeconfigsh)
+  - [Prerequisites](#prerequisites-2)
+  - [Enviroment variables](#enviroment-variables-2)
+  - [Usage](#usage-2)
 
 ## create_vm.sh
 
@@ -202,4 +206,41 @@ For multiple VMs in parallel:
 
 ```bash
 for file in vm-*; do ./delete_vm.sh -f ${file} &; done; wait
+```
+
+## get_kubeconfig.sh
+
+This script is intended to easily get the Kubeconfig file of the K3s/RKE2 cluster created with the `create_vm.sh` script.
+
+> NOTE: The kubeconfig file will be created in a temporary file that will be the script output.
+
+If Rancher is not deployed, it tries to get the Kubeconfig file via ssh, otherwise it leverages the Rancher API.
+
+You can use the same `-f` or `-n` parameters as well, an extra `-i` parameter to specify the IP manually or the `-w` flag that will wait until the kubeconfig is available.
+
+### Prerequisites
+
+* A VM already deployed via the `create_vm.sh`
+  
+### Enviroment variables
+
+The previous environment variables can be used but it requires a few less.
+
+### Usage
+
+```bash
+$ ./get_kubeconfig.sh
+/var/folders/t_/vwz7m7x14ll3f_6pszsly1k00000gp/T/tmp.GhEi9ys5
+```
+
+```bash
+$ ./get_kubeconfig.sh -h
+Usage: ./get_kubeconfig.sh [-f <path/to/variables/file>] [-n <vmname>] [-i <vmip>]
+```
+
+You can use the script in combination with the `create_vm.sh` one as:
+
+```bash
+$ ./create_vm.sh -f vm-foobar
+$ KUBECONFIG=$(./get_kubeconfig.sh -w -f vm-foobar)
 ```
