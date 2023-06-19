@@ -56,7 +56,7 @@ if [ "${RANCHERFLAVOR}" != false ]; then
 	helm install rancher rancher/rancher \
 		--namespace cattle-system \
 		--create-namespace \
-		--set hostname=$(hostname -I | awk '{print $$1}').sslip.io \
+		--set hostname=rancher-$(hostname -I | awk '{print $$1}').sslip.io \
 		--set bootstrapPassword=${RANCHERBOOTSTRAPPASSWORD} \
 		--set replicas=1 \
 		--set global.cattle.psp.enabled=false

@@ -15,7 +15,7 @@ if [ "${RANCHERBOOTSTRAPSKIP}" = true ]; then
 	#!/bin/bash
 	set -euo pipefail
 	# The double dollar sign is because envsubst _removes_ the first one
-	HOST="https://$(hostname -I | awk '{print $$1}').sslip.io"
+	HOST="https://rancher-$(hostname -I | awk '{print $$1}').sslip.io"
 	# export the kubeconfig using the right kubeconfig path depending on the cluster (k3s or rke2)
 	export KUBECONFIG=${KUBECONFIG}
 	while ! ${KUBECTL} wait --for condition=ready -n cattle-system $(${KUBECTL} get pods -n cattle-system -l app=rancher -o name) --timeout=10s; do sleep 2 ; done

@@ -119,19 +119,21 @@ else
 	# Check if the commands required exist
 	command -v jq > /dev/null 2>&1 || die "jq not found" 2
 
+	RANCHERHOSTNAME="rancher-${VMIP}.sslip.io"
+
 	if [ ${WAIT} == true ]; then
 		# Wait until Rancher API answer back with healthz 200
-		while ! [ "$(curl -s -w '%{http_code}' -k -o /dev/null https://${VMIP}.sslip.io/healthz)" -eq 200 ]; do sleep 10; done
+		while ! [ "$(curl -s -w '%{http_code}' -k -o /dev/null https://${RANCHERHOSTNAME}/healthz)" -eq 200 ]; do sleep 10; done
 	fi
 	
 	# Login
-	TOKEN=$(curl -sk -X POST https://${VMIP}.sslip.io/v3-public/localProviders/local?action=login -H 'content-type: application/json' -d "{\"username\":\"admin\",\"responseType\": \"token\", \"password\": \"${RANCHERFINALPASSWORD}\"}" | jq -r .token)
+	TOKEN=$(curl -sk -X POST https://${RANCHERHOSTNAME}/v3-public/localProviders/local?action=login -H 'content-type: application/json' -d "{\"username\":\"admin\",\"responseType\": \"token\", \"password\": \"${RANCHERFINALPASSWORD}\"}" | jq -r .token)
 
 	# Create a temp file
 	TMPKUBECONFIG=$(mktemp)
 	# Get the kubeconfig
 	# TODO: The following API call creates a token that doesn't expire https://github.com/rancher/rancher/issues/37705
-	curl -sk "https://${VMIP}.sslip.io/v3/clusters/local?action=generateKubeconfig" -X 'POST' -H 'content-type: application/json' -H "Authorization: Bearer ${TOKEN}" | jq -r .config > ${TMPKUBECONFIG} 
+	curl -sk "https://${RANCHERHOSTNAME}/v3/clusters/local?action=generateKubeconfig" -X 'POST' -H 'content-type: application/json' -H "Authorization: Bearer ${TOKEN}" | jq -r .config > ${TMPKUBECONFIG} 
 fi
 
 echo ${TMPKUBECONFIG}
