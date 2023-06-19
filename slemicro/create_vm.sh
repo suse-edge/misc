@@ -47,6 +47,7 @@ RANCHERFLAVOR="${RANCHERFLAVOR:-false}"
 UPDATEANDREBOOT="${UPDATEANDREBOOT:-false}"
 QEMUGUESTAGENT="${QEMUGUESTAGENT:-false}"
 DISABLEIPV6="${DISABLEIPV6:-true}"
+EXTRADISKS="${EXTRADISKS:-false}"
 set +a
 
 if [ $(uname -o) == "Darwin" ]; then
@@ -116,6 +117,13 @@ mkdir -p ${VMFOLDER}
 cp ${SLEMICROFILE} ${VMFOLDER}/${VMNAME}.raw
 qemu-img resize -f raw ${VMFOLDER}/${VMNAME}.raw ${DISKSIZE}G > /dev/null
 
+if [ "${EXTRADISKS}" != false ]; then
+	DISKARRAY=(${EXTRADISKS//,/ })
+	for (( i=0; i<"${#DISKARRAY[@]}"; i++ )); do
+		qemu-img create -f raw ${VMFOLDER}/${VMNAME}-extra-disk-${i}.raw "${DISKARRAY[$i]}"G > /dev/null
+	done
+fi
+
 # Create a temp dir to host the assets
 TMPDIR=$(mktemp -d)
 
@@ -162,6 +170,23 @@ rm -Rf ${TMPDIR}
 
 # if x86_64, convert the image to qcow2
 if [ $(uname -o) == "Darwin" ]; then
+	
+	# See if there are extra disks to be created
+	UTMEXTRADISKS=""
+	UTMEXTRADISKMAPPING=""
+	if [ "${EXTRADISKS}" != false ]; then
+		# Probably not needed
+		DISKARRAY=(${EXTRADISKS//,/ })
+		for (( i=0; i<"${#DISKARRAY[@]}"; i++ )); do
+			UTMEXTRADISKS="${UTMEXTRADISKS}
+	set extradisk${i} to POSIX file \"${VMFOLDER}/${VMNAME}-extra-disk-${i}.raw\""
+			UTMEXTRADISKMAPPING="${UTMEXTRADISKMAPPING}, {removable:false, source:extradisk${i}}"
+		done
+	fi
+
+	# If there are not extra disks, this works as well
+	UTMDISKMAPPING="{{removable:true, source:iso}, {removable:false, source:rawfile}${UTMEXTRADISKMAPPING}}"
+
 	# Create and launch the VM using UTM
 	OUTPUT=$(osascript <<-END
 	tell application "UTM"
@@ -169,8 +194,10 @@ if [ $(uname -o) == "Darwin" ]; then
 		set iso to POSIX file "${VMFOLDER}/ignition-and-combustion-${VMNAME}.iso"
 		-- specify the RAW file
 		set rawfile to POSIX file "${VMFOLDER}/${VMNAME}.raw"
+		-- specify extra disks
+		${UTMEXTRADISKS}
 		--- create a new QEMU VM
-		set vm to make new virtual machine with properties {backend:qemu, configuration:{cpu cores:${CPUS}, memory: ${MEMORY}, name:"${VMNAME}", architecture:"aarch64", drives:{{removable:true, source:iso}, {removable:false, source:rawfile}}}}
+		set vm to make new virtual machine with properties {backend:qemu, configuration:{cpu cores:${CPUS}, memory: ${MEMORY}, name:"${VMNAME}", architecture:"aarch64", drives:${UTMDISKMAPPING}}}
 		start vm
 		repeat
 			if status of vm is started then exit repeat

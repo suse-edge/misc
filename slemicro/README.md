@@ -82,6 +82,8 @@ VMNAME="SLEMicro"
 CPUS=4
 MEMORY=4096
 DISKSIZE=30
+# Extra disks (only OSX for now)
+EXTRADISKS="30,10"
 # Location of the ssh key file to be copied to /root/.ssh/authorized_keys
 SSHPUB="${HOME}/.ssh/id_rsa.pub"
 # Enable KUBEVIP to manage a VIP for K3s API
