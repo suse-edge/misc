@@ -134,7 +134,7 @@ $ ./create_vm.sh
 VM started. You can connect to the serial terminal as: screen /dev/ttys001
 Waiting for IP: ................
 VM IP: 192.168.206.60
-After Rancher is installed, you can access the Web UI as https://192.168.206.60.sslip.io
+After Rancher is installed, you can access the Web UI as https://rancher-192.168.206.60.sslip.io
 ```
 
 You could also use the `-f` parameter to specify a path where the variables are stored or `-n` to override the name of the VM to be used:
