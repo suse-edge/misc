@@ -1,0 +1,7 @@
+defaultNamespace: cattle-elemental-system
+helm:
+  releaseName: elemental-operator
+  # I've tried with the OCI one and it breaks Fleet https://github.com/rancher/fleet/issues/1606
+  chart: "https://github.com/rancher/elemental-operator/releases/download/v1.2.4/elemental-operator-1.2.4.tgz"
+  repo: ""
+  values: {}

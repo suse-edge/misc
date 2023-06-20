@@ -1,0 +1,6 @@
+defaultNamespace: cattle-ui-plugin-system
+helm:
+  releaseName: ui-plugin-operator-crd
+  chart: "ui-plugin-operator-crd"
+  repo: "https://charts.rancher.io/"
+  values: {}
