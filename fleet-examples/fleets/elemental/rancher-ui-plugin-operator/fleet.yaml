@@ -1,0 +1,6 @@
+defaultNamespace: cattle-ui-plugin-system
+helm:
+  releaseName: ui-plugin-operator
+  chart: "ui-plugin-operator"
+  repo: "https://charts.rancher.io/"
+  values: {}

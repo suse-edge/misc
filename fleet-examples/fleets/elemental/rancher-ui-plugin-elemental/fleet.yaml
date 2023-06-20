@@ -1,0 +1,8 @@
+defaultNamespace: cattle-ui-plugin-system
+helm:
+  # This needs to be "elemental" otherwise the uiplugin won't work
+  releaseName: elemental
+  # This one doesn't have an index.yaml browsable via http
+  chart: "https://github.com/rancher/ui-plugin-charts/raw/main/assets/elemental/elemental-1.1.0.tgz"
+  repo: ""
+  values: {}
