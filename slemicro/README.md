@@ -24,6 +24,7 @@
   - [Prerequisites](#prerequisites-2)
   - [Enviroment variables](#enviroment-variables-2)
   - [Usage](#usage-2)
+- [What's next?](#whats-next)
 
 ## create_vm.sh
 
@@ -114,8 +115,6 @@ RANCHERBOOTSTRAPSKIP="true"
 RANCHERFINALPASSWORD="adminadminadmin"
 # Set it to sync the VM clock.
 QEMUGUESTAGENT=true
-# Deploy elemental on rancher
-ELEMENTAL=true
 # Enable cockpit
 COCKPIT=true
 # Enable podman
@@ -248,3 +247,7 @@ You can use the script in combination with the `create_vm.sh` one as:
 $ ./create_vm.sh -f vm-foobar
 $ KUBECONFIG=$(./get_kubeconfig.sh -w -f vm-foobar)
 ```
+
+## What's next?
+
+See the [fleet-examples](../fleet-examples/) folder for some workloads you can deploy on top of your new shiny cluster.
