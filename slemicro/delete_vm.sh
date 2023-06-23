@@ -35,6 +35,7 @@ set -a
 source ${ENVFILE:-${BASEDIR}/.env}
 # Some defaults just in case
 VMNAME="${VMNAME:-slemicro}"
+EXTRADISKS="${EXTRADISKS:-false}"
 set +a
 
 if [ $(uname -o) == "Darwin" ]; then
