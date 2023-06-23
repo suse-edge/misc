@@ -1,0 +1,20 @@
+defaultNamespace: longhorn-system
+helm:
+  releaseName: longhorn
+  chart: longhorn
+  repo: https://charts.rancher.io/
+targetCustomizations:
+- name: local
+  clusterSelector:
+    matchLabels:
+      management.cattle.io/cluster-display-name: local
+  helm:
+    values:
+      ingress:
+        enabled: true
+        host: longhorn-${ .ClusterAnnotations.ingressip }.sslip.io
+        annotations:
+          traefik.ingress.kubernetes.io/router.middlewares: longhorn-system-longhorn-basic-auth@kubernetescrd
+  kustomize:
+    dir: overlays/local
+

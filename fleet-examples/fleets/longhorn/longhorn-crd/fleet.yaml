@@ -1,0 +1,5 @@
+defaultNamespace: longhorn-system
+helm:
+  releaseName: longhorn-crd
+  chart: longhorn-crd
+  repo: https://charts.rancher.io/
