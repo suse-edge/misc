@@ -126,8 +126,13 @@ else
 		while ! [ "$(curl -s -w '%{http_code}' -k -o /dev/null https://${RANCHERHOSTNAME}/healthz)" -eq 200 ]; do sleep 10; done
 	fi
 	
-	# Login
-	TOKEN=$(curl -sk -X POST https://${RANCHERHOSTNAME}/v3-public/localProviders/local?action=login -H 'content-type: application/json' -d "{\"username\":\"admin\",\"responseType\": \"token\", \"password\": \"${RANCHERFINALPASSWORD}\"}" | jq -r .token)
+	TOKEN="null"
+	# Prevent a race condition while the rancher bootstrap is being applied
+	while [ ${TOKEN} == "null" ]; do
+		sleep 5
+		# Login
+		TOKEN=$(curl -sk -X POST https://${RANCHERHOSTNAME}/v3-public/localProviders/local?action=login -H 'content-type: application/json' -d "{\"username\":\"admin\",\"responseType\": \"token\", \"password\": \"${RANCHERFINALPASSWORD}\"}" | jq -r .token)
+	done
 
 	# Create a temp file
 	TMPKUBECONFIG=$(mktemp)
