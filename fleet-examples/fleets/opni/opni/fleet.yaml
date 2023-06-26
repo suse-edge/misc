@@ -1,0 +1,17 @@
+defaultNamespace: opni
+helm:
+  releaseName: opni
+  chart: "https://github.com/rancher/opni/raw/charts-repo/assets/opni/opni-0.10.0.tgz"
+  repo: ""
+targetCustomizations:
+- name: local
+  clusterSelector:
+    matchLabels:
+      management.cattle.io/cluster-display-name: local
+  helm:
+    values:
+      gateway:
+        hostname: opni-local
+        serviceType: NodePort
+dependsOn:
+  - name: opni-fleet-examples-fleets-opni-opni-crd

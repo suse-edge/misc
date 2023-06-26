@@ -1,0 +1,5 @@
+defaultNamespace: opni
+helm:
+  releaseName: opni-crd
+  chart: "https://github.com/rancher/opni/raw/charts-repo/assets/opni-crd/opni-crd-0.10.0.tgz"
+  repo: ""
