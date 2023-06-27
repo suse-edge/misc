@@ -41,7 +41,7 @@ K3s or RKE2 and Rancher are optionally installed. Rancher access is configured w
 * `mkisofs`
 * `qemu-img`
 
-NOTE: They can be installed using `brew`
+NOTE: They can be installed using `brew`. `envsubst` is available via the `gettext` package.
 
 * [UTM 4.2.2](https://docs.getutm.app/) or higest (required for the scripting part)
 

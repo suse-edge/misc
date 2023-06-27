@@ -14,8 +14,7 @@ if [ "${RANCHERBOOTSTRAPSKIP}" = true ]; then
 	cat <<- "EOF" > /usr/local/bin/skip-rancher-bootstrap.sh
 	#!/bin/bash
 	set -euo pipefail
-	# The double dollar sign is because envsubst _removes_ the first one
-	HOST="https://rancher-$(hostname -I | awk '{print $$1}').sslip.io"
+	HOST="https://rancher-$(hostname -I | awk '{print $1}').sslip.io"
 	# export the kubeconfig using the right kubeconfig path depending on the cluster (k3s or rke2)
 	export KUBECONFIG=${KUBECONFIG}
 	while ! ${KUBECTL} wait --for condition=ready -n cattle-system $(${KUBECTL} get pods -n cattle-system -l app=rancher -o name) --timeout=10s; do sleep 2 ; done
@@ -27,17 +26,17 @@ if [ "${RANCHERBOOTSTRAPSKIP}" = true ]; then
 	fi
 
 	# Get token
-	# The triple (!) dollar sign is because envsubst _removes_ the first one, then the extra one is for the 'EOF'
-	TOKEN=$(curl -sk -X POST $$${q}{HOST}/v3-public/localProviders/local?action=login -H 'content-type: application/json' -d '{"username":"admin","password":"${RANCHERBOOTSTRAPPASSWORD}"}' | jq -r .token)
+	# The double (!) dollar sign is because envsubst _removes_ the first one, then the extra one is for the 'EOF'
+	TOKEN=$(curl -sk -X POST $${q}{HOST}/v3-public/localProviders/local?action=login -H 'content-type: application/json' -d '{"username":"admin","password":"${RANCHERBOOTSTRAPPASSWORD}"}' | jq -r .token)
 
 	# Set password
-	curl -sk $$${q}{HOST}/v3/users?action=changepassword -H 'content-type: application/json' -H "Authorization: Bearer $$${q}TOKEN" -d '{"currentPassword":"${RANCHERBOOTSTRAPPASSWORD}","newPassword":"${RANCHERFINALPASSWORD}"}'
+	curl -sk $${q}{HOST}/v3/users?action=changepassword -H 'content-type: application/json' -H "Authorization: Bearer $${q}TOKEN" -d '{"currentPassword":"${RANCHERBOOTSTRAPPASSWORD}","newPassword":"${RANCHERFINALPASSWORD}"}'
 
 	# Create a temporary API token (ttl=60 minutes)
-	APITOKEN=$(curl -sk $$${q}{HOST}/v3/token -H 'content-type: application/json' -H "Authorization: Bearer $$${q}{TOKEN}" -d '{"type":"token","description":"automation","ttl":3600000}' | jq -r .token)
+	APITOKEN=$(curl -sk $${q}{HOST}/v3/token -H 'content-type: application/json' -H "Authorization: Bearer $${q}{TOKEN}" -d '{"type":"token","description":"automation","ttl":3600000}' | jq -r .token)
 
-	curl -sk $$${q}{HOST}/v3/settings/server-url -H 'content-type: application/json' -H "Authorization: Bearer $$${q}{APITOKEN}" -X PUT -d "{\"name\":\"server-url\",\"value\":\"$$${q}{HOST}\"}"
-	curl -sk $$${q}{HOST}/v3/settings/telemetry-opt -X PUT -H 'content-type: application/json' -H 'accept: application/json' -H "Authorization: Bearer $$${q}{APITOKEN}" -d '{"value":"out"}'
+	curl -sk $${q}{HOST}/v3/settings/server-url -H 'content-type: application/json' -H "Authorization: Bearer $${q}{APITOKEN}" -X PUT -d "{\"name\":\"server-url\",\"value\":\"$${q}{HOST}\"}"
+	curl -sk $${q}{HOST}/v3/settings/telemetry-opt -X PUT -H 'content-type: application/json' -H 'accept: application/json' -H "Authorization: Bearer $${q}{APITOKEN}" -d '{"value":"out"}'
 	EOF
 
 	chmod a+x /usr/local/bin/skip-rancher-bootstrap.sh

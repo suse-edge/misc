@@ -52,11 +52,10 @@ if [ "${RANCHERFLAVOR}" != false ]; then
 	fi
 
 	# Install rancher using sslip.io as hostname and with just a single replica
-	# The double dollar sign is because envsubst _removes_ the first one
 	helm install rancher rancher/rancher \
 		--namespace cattle-system \
 		--create-namespace \
-		--set hostname=rancher-$(hostname -I | awk '{print $$1}').sslip.io \
+		--set hostname=rancher-$(hostname -I | awk '{print $1}').sslip.io \
 		--set bootstrapPassword=${RANCHERBOOTSTRAPPASSWORD} \
 		--set replicas=1 \
 		--set global.cattle.psp.enabled=false
