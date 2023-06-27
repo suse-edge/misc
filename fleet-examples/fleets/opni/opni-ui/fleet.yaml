@@ -1,0 +1,5 @@
+defaultNamespace: cattle-ui-plugin-system
+helm:
+  releaseName: opni
+  chart: "https://github.com/rancher/opni-ui/raw/main/assets/opni/opni-0.1.0.tgz"
+  repo: ""

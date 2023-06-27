@@ -12,11 +12,21 @@ kubectl apply -f https://raw.githubusercontent.com/suse-edge/misc/main/fleet-exa
 kubectl apply -f https://raw.githubusercontent.com/suse-edge/misc/main/fleet-examples/gitrepos/akri-suse-edge-gitrepo.yaml
 ```
 
-* [Elemental](./fleets/elemental) - [Elemental Operator](https://github.com/rancher/elemental-operator), including the [Rancher's UI Plugin Operator](https://github.com/rancher/ui-plugin-operator) and the [Elemental's Rancher UI Plugin](https://github.com/rancher/ui-plugin-charts/):
+* [Elemental](./fleets/elemental) - [Elemental Operator](https://github.com/rancher/elemental-operator), including the [Elemental's Rancher UI Plugin](https://github.com/rancher/ui-plugin-charts/):
 
 ```
 kubectl apply -f https://raw.githubusercontent.com/suse-edge/misc/main/fleet-examples/gitrepos/elemental-gitrepo.yaml
 ```
+
+NOTE: If the [Rancher's UI Plugin Operator](https://github.com/rancher/ui-plugin-operator) is not installed, enable the installation in the [Elemental Gitrepo](./gitrepos/elemental-gitrepo.yaml) file.
+
+* [Opni](./fleets/opni) - [Opni](https://github.com/rancher/opni), including the [Opni's Rancher UI Plugin](https://github.com/rancher/opni-ui/):
+
+```
+kubectl apply -f https://raw.githubusercontent.com/suse-edge/misc/main/fleet-examples/gitrepos/opni-gitrepo.yaml
+```
+
+NOTE: If the [Rancher's UI Plugin Operator](https://github.com/rancher/ui-plugin-operator) is not installed, enable the installation in the [Opni Gitrepo](./gitrepos/opni-gitrepo.yaml) file.
 
 * [Longhorn](./fleets/longhorn) - [Longhorn](https://longhorn.io/):
 
@@ -95,16 +105,16 @@ This means:
   * If the Traefik Ingress uses sslip.io
   * If the local cluster has been annotated with the Ingress IP:
 
-`kubectl annotate clusters.fleet.cattle.io/local -n fleet-local  "ingressip=$(kubectl get svc -n kube-system traefik -o jsonpath='{.status.loadBalancer.ingress[*].ip}')"`
+`kubectl annotate clusters.fleet.cattle.io/local -n fleet-local  "ingressip=$(kubectl get svc -n kube-system traefik -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"`
 
 It will enable the Longhorn UI protected via user/password using a [kustomization overlay](./fleets/longhorn/longhorn/overlays/kustomization.yaml)
 
 This is basically intended to be used with the [create-vm.sh](../slemicro/create_vm.sh) script as:
 
 ```
-create_vm.sh -f myvm
-export KUBECONFIG=$(get_kubeconfig.sh -f myvm -w)
-kubectl annotate clusters.fleet.cattle.io/local -n fleet-local  "ingressip=$(kubectl get svc -n kube-system traefik -o jsonpath='{.status.loadBalancer.ingress[*].ip}')"
+./create_vm.sh -f myvm
+export KUBECONFIG=$(./get_kubeconfig.sh -f myvm -w)
+kubectl annotate clusters.fleet.cattle.io/local -n fleet-local "ingressip=$(kubectl get svc -n kube-system traefik -o jsonpath='{.status.loadBalancer.ingress[0].ip}')"
 kubectl apply -f https://raw.githubusercontent.com/suse-edge/misc/main/fleet-examples/gitrepos/longhorn-gitrepo.yaml
 ```
 

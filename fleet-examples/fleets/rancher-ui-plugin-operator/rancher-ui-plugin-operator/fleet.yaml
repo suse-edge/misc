@@ -3,4 +3,7 @@ helm:
   releaseName: ui-plugin-operator
   chart: "ui-plugin-operator"
   repo: "https://charts.rancher.io/"
-  values: {}
+dependsOn:
+  - selector:
+      matchLabels:
+        chart: "rancher-ui-plugin-operator-crd"
