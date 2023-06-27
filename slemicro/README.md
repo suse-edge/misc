@@ -107,6 +107,9 @@ INSTALL_CLUSTER_EXEC="server --cluster-init --write-kubeconfig-mode=644"
 CLUSTER_TOKEN="foobar"
 # Set it to the Rancher flavor you want to install "stable", "latest", "alpha", "prime" or just false to disable it
 RANCHERFLAVOR="latest"
+# Use latest cert-manager version or a custom one (as prerequisite for Rancher)
+# https://ranchermanager.docs.rancher.com/getting-started/quick-start-guides/deploy-rancher-manager/helm-cli#install-rancher-with-helm
+CERTMANAGERVERSION="latest"
 # Initial Rancher bootstrap password
 RANCHERBOOTSTRAPPASSWORD="admin"
 # Enable to skip the rancher bootstrap phase

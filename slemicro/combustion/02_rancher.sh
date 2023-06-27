@@ -9,6 +9,12 @@ if [ "${RANCHERFLAVOR}" != false ]; then
 	# Download helm as required to install rancher
 	curl -fsSL https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 |bash
 
+	CMVERSION=${CERTMANAGERVERSION}
+	if [ "$${q}{CMVERSION}" == "latest" ]; then
+		# Using this awk & tr thing to avoid installing jq for just this
+		CMVERSION=$(curl -s "https://api.github.com/repos/cert-manager/cert-manager/releases/latest" | awk '/tag_name/ { print $2 }' | tr -d '",')
+	fi
+
 	# Create a script to install rancher that will be called via a systemd service
 	# See https://stackoverflow.com/a/61259844 for the reason about ${q} :)
 	cat <<- EOF > /usr/local/bin/rancher_installer.sh
@@ -35,7 +41,6 @@ if [ "${RANCHERFLAVOR}" != false ]; then
 	esac
 
 	helm repo add jetstack https://charts.jetstack.io
-	# Update your local Helm chart repository cache
 	helm repo update
 
 	# Install the cert-manager Helm chart
@@ -43,7 +48,7 @@ if [ "${RANCHERFLAVOR}" != false ]; then
 		--namespace cert-manager \
 		--create-namespace \
 		--set installCRDs=true \
-		--version v1.12.0
+		--version $${q}{CMVERSION}
 
 	# https://github.com/rancher/rke2/issues/3958
 	if [ "${CLUSTER}" == "rke2" ]; then
