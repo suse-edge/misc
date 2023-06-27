@@ -48,6 +48,27 @@ kubectl apply -f https://raw.githubusercontent.com/suse-edge/misc/main/fleet-exa
 
 A few notes about this example:
 
+* Longhorn creates its own `storageclass` and if using K3s default configuration you can end up with two default `storageclasses`:
+
+```
+$ kubectl get sc
+NAME                   PROVISIONER             RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
+local-path (default)   rancher.io/local-path   Delete          WaitForFirstConsumer   false                  26m
+longhorn (default)     driver.longhorn.io      Delete          Immediate              true                   2s
+```
+
+To make the `longhorn` one the default, you can remove the `is-default-class` annotation from the `local-path` one as:
+
+```
+kubectl patch storageclass local-path -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"false"}}}'
+```
+
+If you want to remove the annotation to the `longhorn` one, you need to tweak the [Helm parameters](https://github.com/longhorn/longhorn/blob/master/chart/values.yaml#L83-L84) as:
+
+```
+persistence.defaultClass=false
+```
+
 * The Longhorn UI is not exposed by default. If you want to expose it, you need to specify a couple of Helm values such as:
 
 ```
