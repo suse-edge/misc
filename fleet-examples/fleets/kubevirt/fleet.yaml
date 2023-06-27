@@ -1,0 +1,16 @@
+defaultNamespace: kubevirt
+helm:
+  chart: "kubevirt"
+  repo: "https://suse-edge.github.io/charts"
+  version: "0.1.0"
+  # kubevirt namespace is created by kubevirt as well, we need to take ownership of it, otherwise it fails
+  takeOwnership: true
+# https://fleet.rancher.io/bundle-diffs
+diff:
+  comparePatches:
+  - apiVersion: kubevirt.io/v1
+    kind: KubeVirt
+    name: kubevirt
+    namespace: kubevirt
+    operations:
+    - {"op":"remove", "path":"/spec/configuration/developerConfiguration/featureGates"}
