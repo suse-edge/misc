@@ -12,6 +12,12 @@ kubectl apply -f https://raw.githubusercontent.com/suse-edge/misc/main/fleet-exa
 kubectl apply -f https://raw.githubusercontent.com/suse-edge/misc/main/fleet-examples/gitrepos/akri-suse-edge-gitrepo.yaml
 ```
 
+* [Kubevirt](./fleets/kubevirt) - [Kubevirt](https://github.com/kubevirt/kubevirt) via [SUSE Edge charts repository](https://suse-edge.github.io/charts/)
+
+```
+kubectl apply -f https://raw.githubusercontent.com/suse-edge/misc/main/fleet-examples/gitrepos/kubevirt-suse-edge-gitrepo.yaml
+```
+
 * [Elemental](./fleets/elemental) - [Elemental Operator](https://github.com/rancher/elemental-operator), including the [Elemental's Rancher UI Plugin](https://github.com/rancher/ui-plugin-charts/):
 
 ```
@@ -27,6 +33,12 @@ kubectl apply -f https://raw.githubusercontent.com/suse-edge/misc/main/fleet-exa
 ```
 
 NOTE: If the [Rancher's UI Plugin Operator](https://github.com/rancher/ui-plugin-operator) is not installed, enable the installation in the [Opni Gitrepo](./gitrepos/opni-gitrepo.yaml) file.
+
+* [Rancher's UI Plugin Operator](./fleets/rancher-ui-plugin-operator) - [Rancher's UI Plugin Operator](https://github.com/rancher/ui-plugin-operator):
+
+```
+kubectl apply -f https://raw.githubusercontent.com/suse-edge/misc/main/fleet-examples/gitrepos/rancher-ui-plugin-operator-gitrepo.yaml
+```
 
 * [Longhorn](./fleets/longhorn) - [Longhorn](https://longhorn.io/):
 
