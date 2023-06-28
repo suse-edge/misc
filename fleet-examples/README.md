@@ -18,6 +18,12 @@ kubectl apply -f https://raw.githubusercontent.com/suse-edge/misc/main/fleet-exa
 kubectl apply -f https://raw.githubusercontent.com/suse-edge/misc/main/fleet-examples/gitrepos/kubevirt-suse-edge-gitrepo.yaml
 ```
 
+* [MetalLB](./fleets/metallb) - [MetalLB](https://metallb.universe.tf/) via [Rancher Partner charts repository](https://github.com/rancher/partner-charts/)
+
+```
+kubectl apply -f https://raw.githubusercontent.com/suse-edge/misc/main/fleet-examples/gitrepos/metallb-gitrepo.yaml
+```
+
 * [Elemental](./fleets/elemental) - [Elemental Operator](https://github.com/rancher/elemental-operator), including the [Elemental's Rancher UI Plugin](https://github.com/rancher/ui-plugin-charts/):
 
 ```
