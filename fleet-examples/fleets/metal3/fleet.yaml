@@ -1,0 +1,5 @@
+defaultNamespace: metal-cubed
+helm:
+  releaseName: metal3-deploy
+  chart: "metal3-deploy"
+  repo: "https://suse-edge.github.io/charts"
