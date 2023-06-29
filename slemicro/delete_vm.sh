@@ -55,8 +55,12 @@ if [ $(uname -o) == "Darwin" ]; then
 	END
 	)
 elif [ $(uname -o) == "GNU/Linux" ]; then
-	virsh destroy ${VMNAME}
-	virsh undefine ${VMNAME}
+	if virsh list --all --name | grep -q ${VMNAME} ; then
+		[ "$(virsh domstate ${VMNAME} 2>/dev/null)" == "running" ] && virsh destroy ${VMNAME}
+		virsh undefine ${VMNAME}
+	else
+		die "${VMNAME} not found" 2
+	fi
 else
 	die "Unsupported operating system" 2
 fi
