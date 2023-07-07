@@ -29,7 +29,7 @@ if [ "${CLUSTER}" == "k3s" ]; then
 	RemainAfterExit=yes
 	KillMode=process
 	# Load the proper modules for kube-vip lb to work
-	ExecStartPost=/bin/sh -c "[ -f /root/ipvs.conf ] && mv /root/ipvs.conf /etc/modules-load.d/ipvs.conf || true"
+	ExecStartPost=/bin/sh -c "[ -f /root/ipvs.conf ] && mv /root/ipvs.conf /etc/modules-load.d/ipvs.conf && restorecon -vR /etc/modules-load.d || true"
 	ExecStartPost=/bin/sh -c "[ -f /etc/modules-load.d/ipvs.conf ] && systemctl restart systemd-modules-load || true"
 	# Move the kube-vip file if exists
 	ExecStartPost=/bin/sh -c "[ -f /root/kube-vip.yaml ] && mkdir -p /var/lib/rancher/k3s/server/manifests || true"
