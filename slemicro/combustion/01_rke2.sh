@@ -29,7 +29,7 @@ if [ "${CLUSTER}" == "rke2" ]; then
 	# update path in exec start post to include rke2 bin path
 	ExecStartPost=/bin/sh -c "echo 'export KUBECONFIG=/etc/rancher/rke2/rke2.yaml' >> ~/.bashrc ; echo 'export PATH=${PATH}:/var/lib/rancher/rke2/bin' >> ~/.bashrc ; source ~/.bashrc"
 	# Load the proper modules for kube-vip lb to work
-	ExecStartPost=/bin/sh -c "[ -f /root/ipvs.conf ] && mv /root/ipvs.conf /etc/modules-load.d/ipvs.conf || true"
+	ExecStartPost=/bin/sh -c "[ -f /root/ipvs.conf ] && mv /root/ipvs.conf /etc/modules-load.d/ipvs.conf && restorecon -vR /etc/modules-load.d || true"
 	ExecStartPost=/bin/sh -c "[ -f /etc/modules-load.d/ipvs.conf ] && systemctl restart systemd-modules-load || true"
 	# Move the kube-vip file if exists
 	ExecStartPost=/bin/sh -c "mkdir -p /var/lib/rancher/rke2/server/manifests"
