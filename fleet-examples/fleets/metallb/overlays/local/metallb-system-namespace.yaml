@@ -1,0 +1,13 @@
+apiVersion: builtin
+kind: LabelTransformer
+metadata:
+  name: notImportantHere
+# https://metallb.universe.tf/installation/#installation-with-helm
+labels:
+  pod-security.kubernetes.io/enforce: privileged
+  pod-security.kubernetes.io/audit: privileged
+  pod-security.kubernetes.io/warn: privileged
+fieldSpecs:
+- kind: Namespace
+  path: metadata/labels
+  create: true
