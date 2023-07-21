@@ -49,6 +49,7 @@ UPDATEANDREBOOT="${UPDATEANDREBOOT:-false}"
 QEMUGUESTAGENT="${QEMUGUESTAGENT:-false}"
 DISABLEIPV6="${DISABLEIPV6:-true}"
 EXTRADISKS="${EXTRADISKS:-false}"
+VM_ARCH=${VM_ARCH:-aarch64}
 set +a
 
 if [ $(uname -o) == "Darwin" ]; then
@@ -125,6 +126,7 @@ if [ "${EXTRADISKS}" != false ]; then
 	done
 fi
 
+set -x
 # Create a temp dir to host the assets
 TMPDIR=$(mktemp -d)
 
@@ -164,7 +166,7 @@ if [ -f ${BASEDIR}/combustion/script ]; then
 fi
 
 # Create an iso
-mkisofs -quiet -full-iso9660-filenames -o ${VMFOLDER}/ignition-and-combustion-${VMNAME}.iso -V ignition ${TMPDIR}
+mkisofs -full-iso9660-filenames -o ${VMFOLDER}/ignition-and-combustion-${VMNAME}.iso -V ignition ${TMPDIR}
 
 # Remove leftovers
 rm -Rf ${TMPDIR}
@@ -198,7 +200,21 @@ if [ $(uname -o) == "Darwin" ]; then
 		-- specify extra disks
 		${UTMEXTRADISKS}
 		--- create a new QEMU VM
-		set vm to make new virtual machine with properties {backend:qemu, configuration:{cpu cores:${CPUS}, memory: ${MEMORY}, name:"${VMNAME}", architecture:"aarch64", drives:${UTMDISKMAPPING}}}
+		set vm to make new virtual machine with properties {backend:qemu, configuration:{cpu cores:${CPUS}, memory: ${MEMORY}, name:"${VMNAME}", architecture:"${VM_ARCH}", drives:${UTMDISKMAPPING}}}
+	end tell
+	END
+	)
+
+	# FIXME: It doesn't yet seem possible to force multicore via the script API...
+	# but the docs say this is important to improve performance of x86_64 on ARM
+	if [ "${VM_ARCH}" == "x86_64" ]; then
+		echo "Manually set Force Multicore for ${VMNAME} (not yet scripted) then press any key"
+		read
+	fi
+
+	OUTPUT=$(osascript <<-END
+	tell application "UTM"
+		set vm to virtual machine named "${VMNAME}"
 		start vm
 		repeat
 			if status of vm is started then exit repeat
