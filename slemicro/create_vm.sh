@@ -49,6 +49,7 @@ UPDATEANDREBOOT="${UPDATEANDREBOOT:-false}"
 QEMUGUESTAGENT="${QEMUGUESTAGENT:-false}"
 DISABLEIPV6="${DISABLEIPV6:-true}"
 EXTRADISKS="${EXTRADISKS:-false}"
+VM_NETWORK=${VM_NETWORK:-default}
 set +a
 
 if [ $(uname -o) == "Darwin" ]; then
@@ -253,7 +254,7 @@ elif [ $(uname -o) == "GNU/Linux" ]; then
 		--disk ${VMFOLDER}/${VMNAME}.qcow2 \
 		--import \
 		--cdrom ${VMFOLDER}/ignition-and-combustion-${VMNAME}.iso \
-		--network network=default \
+		--network network=${VM_NETWORK} \
 		--osinfo detect=on,name=sle-unknown \
 		--print-xml 1 > ${VIRTFILE}
 	sed -i -e 's#<on_reboot>destroy</on_reboot>#<on_reboot>restart</on_reboot>#g' ${VIRTFILE}
