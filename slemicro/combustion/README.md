@@ -16,6 +16,8 @@ That's why they are copied and then appended to the `script` file.
 
 The procedure is really straightforward. You just need to drop the script in this folder and it will be used at combustion phase. The order can be explicitely be set with the script name `??_foobar.sh`
 
+> Bear in mind that for limitations of the iso9660 filesystem, the filename will be trimmed if > 32 characters long. See https://en.wikipedia.org/wiki/ISO_9660#Directories_and_files for more information.
+
 ### Considerations
 
 * The combustion procedure happens at initrd timing... and unfortunately there is not much there, so you need to be a little bit creative. A usual _trick_ is to create a script that performs the deployment of the feature itself and then a systemd unit that executes that script. The systemd unit is a regular systemd unit and it will be executed at boot time. Something like:

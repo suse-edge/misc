@@ -126,6 +126,10 @@ PODMAN=true
 UPDATEANDREBOOT=true
 # Disable IPv6
 DISABLEIPV6=true
+# Disable the rebootmgr service
+REBOOTMGR=false
+# Disable the transactional-updates timers
+TRANSACTIONALUPDATES=false
 EOF
 ```
 
