@@ -25,7 +25,7 @@ while getopts 'f:n:i:wh' OPTION; do
 			[ -f "${OPTARG}" ] && ENVFILE="${OPTARG}" || die "Parameters file ${OPTARG} not found" 2
 			;;
 		n)
-			VMNAME="${OPTARG}"
+			NAMEOPTION="${OPTARG}"
 			;;
 		i)
 			VMIP="${OPTARG}"
@@ -46,7 +46,7 @@ set -a
 # Get the env file
 source ${ENVFILE:-${BASEDIR}/.env}
 # Some defaults just in case
-VMNAME="${VMNAME:-slemicro}"
+VMNAME="${NAMEOPTION:-${VMNAME:-slemicro}}"
 RANCHERFLAVOR="${RANCHERFLAVOR:-false}"
 RANCHERFINALPASSWORD="${RANCHERFINALPASSWORD:-false}"
 CLUSTER="${CLUSTER:-false}"
