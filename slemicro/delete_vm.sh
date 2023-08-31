@@ -19,7 +19,7 @@ while getopts 'f:n:h' OPTION; do
 			[ -f "${OPTARG}" ] && ENVFILE="${OPTARG}" || die "Parameters file ${OPTARG} not found" 2
 			;;
 		n)
-			VMNAME="${OPTARG}"
+			NAMEOPTION="${OPTARG}"
 			;;
 		h)
 			usage && exit 0
@@ -34,7 +34,7 @@ set -a
 # Get the env file
 source ${ENVFILE:-${BASEDIR}/.env}
 # Some defaults just in case
-VMNAME="${VMNAME:-slemicro}"
+VMNAME="${NAMEOPTION:-${VMNAME:-slemicro}}"
 EXTRADISKS="${EXTRADISKS:-false}"
 set +a
 

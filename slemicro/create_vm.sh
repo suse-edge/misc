@@ -19,7 +19,7 @@ while getopts 'f:n:h' OPTION; do
 			[ -f "${OPTARG}" ] && ENVFILE="${OPTARG}" || die "Parameters file ${OPTARG} not found" 2
 			;;
 		n)
-			VMNAME="${OPTARG}"
+			NAMEOPTION="${OPTARG}"
 			;;
 		h)
 			usage && exit 0
@@ -38,7 +38,7 @@ CPUS="${CPUS:-2}"
 MEMORY="${MEMORY:-2048}"
 DISKSIZE="${DISKSIZE:-30}"
 SSHPUB="${SSHPUB:-${HOME}/.ssh/id_rsa.pub}"
-VMNAME="${VMNAME:-slemicro}"
+VMNAME="${NAMEOPTION:-${VMNAME:-slemicro}}"
 REGISTER="${REGISTER:-false}"
 CERTMANAGERVERSION="${CERTMANAGERVERSION:-latest}"
 RANCHERBOOTSTRAPSKIP="${RANCHERBOOTSTRAPSKIP:-false}"
