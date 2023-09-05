@@ -1,7 +1,7 @@
 kind: GitRepo
 apiVersion: fleet.cattle.io/v1alpha1
 metadata:
-  name: metallb
+  name: metallb-suse-edge
   namespace: fleet-local
 spec:
   repo: https://github.com/suse-edge/misc.git
