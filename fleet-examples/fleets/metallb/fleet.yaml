@@ -1,7 +1,7 @@
 defaultNamespace: metallb-system
 helm:
   chart: "metallb"
-  repo: "https://partner-charts.rancher.io"
+  repo: "https://suse-edge.github.io/charts"
   version: "0.13.10"
   releaseName: "metallb"
 targetCustomizations:
