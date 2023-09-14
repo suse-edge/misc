@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: scc-garbage-collector
+  namespace: scc-garbage-collector
+  labels:
+    app: scc-garbage-collector
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: scc-garbage-collector
+  template:
+    metadata:
+      labels:
+        app: scc-garbage-collector
+    spec:
+      containers:
+        - name: scc-garbage-collector
+          image: registry.opensuse.org/home/eminguez/containers/images/minimal-jq-curl:latest
+          env:
+          - name: USER
+            valueFrom:
+              secretKeyRef:
+                name: scc-user-pass
+                key: username
+          - name: PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: scc-user-pass
+                key: password
+          command:
+            - /bin/bash
+            - -c
+            - |
+              #/bin/bash
+              curl https://raw.githubusercontent.com/suse-edge/misc/main/scc/delete_unseen_systems.sh -o ~/delete_unseen_systems.sh
+              chmod a+x ~/delete_unseen_systems.sh
+              while true; do ~/delete_unseen_systems.sh ${USER} ${PASSWORD}; sleep 1d; done
+---
+apiVersion: v1
+data:
+  password: foobar
+  username: foobar
+kind: Secret
+metadata:
+  name: scc-user-pass
+  namespace: scc-garbage-collector
+type: Opaque
