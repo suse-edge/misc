@@ -159,6 +159,7 @@ if [ -f ${BASEDIR}/combustion/script ]; then
 	
 	# Copy all combustion related files to the final iso destination parsing the vars
 	for file in ${BASEDIR}/combustion/*.sh; do
+		[ -f "$file" ] || break
 		FILENAME=$(basename ${file})
 		envsubst < ${file} > ${TMPDIR}/combustion/${FILENAME}
 		chmod a+x ${TMPDIR}/combustion/${FILENAME}
