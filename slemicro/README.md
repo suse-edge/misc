@@ -24,6 +24,10 @@
   - [Prerequisites](#prerequisites-2)
   - [Enviroment variables](#enviroment-variables-2)
   - [Usage](#usage-2)
+- [get\ip.sh](#get_ip)
+  - [Prerequisites](#prerequisites-2)
+  - [Enviroment variables](#enviroment-variables-2)
+  - [Usage](#usage-2)
 - [What's next?](#whats-next)
 
 ## create_vm.sh
@@ -253,6 +257,36 @@ You can use the script in combination with the `create_vm.sh` one as:
 ```bash
 $ ./create_vm.sh -f vm-foobar
 $ KUBECONFIG=$(./get_kubeconfig.sh -w -f vm-foobar)
+```
+
+## get_ip.sh
+
+This script is intended to easily get the VM IP created with the `create_vm.sh` script.
+
+You can use the same `-f` or `-n` parameters as well.
+
+### Prerequisites
+
+* A VM already deployed via the `create_vm.sh`
+  
+### Enviroment variables
+
+The previous environment variables can be used but it requires a few less.
+
+### Usage
+
+```bash
+$ ./get_ip.sh
+192.168.205.2
+```
+
+```bash
+$ ./get_ip.sh -h
+Usage: ./get_ip.sh [-f <path/to/variables/file>] [-n <vmname>]
+
+Options:
+ -f		(Optional) Path to the variables file
+ -n		(Optional) Virtual machine name
 ```
 
 ## What's next?
