@@ -1,11 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
-BASEDIR="$(dirname "$0")"
 
-die(){
-	echo ${1} 1>&2
-	exit ${2}
-}
+source common.sh
 
 usage(){
 	cat <<-EOF
@@ -267,15 +263,16 @@ elif [ $(uname -o) == "GNU/Linux" ]; then
 	echo -n "Waiting for IP..."
 	timeout=180
 	count=0
-	while [ $(virsh domifaddr ${VMNAME} | awk -F'[ /]+' '/ipv/ {print $5}' | wc -l) -ne 1 ]; do
+	VMIP=""
+	while [ -z "${VMIP}" ]; do
+			sleep 1
 			count=$((count + 1))
 			if [[ ${count} -ge ${timeout} ]]; then
 				break
 			fi
-			sleep 1
 			echo -n "."
+			VMIP=$(vm_ip)
 	done
-	VMIP=$(virsh domifaddr ${VMNAME} | awk -F'[ /]+' '/ipv/ {print $5}' )
 else
 	die "VM not deployed. Unsupported operating system" 2
 fi
