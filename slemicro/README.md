@@ -183,6 +183,17 @@ worker-1   Ready    <none>                      15s   v1.25.9+k3s1
 
 **TIP:** To run the VM creation in parallel you can use `for file in vm-*; do ./create_vm.sh -f ${file} &; done; wait` (the output will be a little bit messy however)
 
+### Static IPs
+
+It is possible to deploy a VM with a static IP by setting the `VM_STATIC_IP` variable.
+
+Optionally additional configuration may be specified:
+* `VM_STATIC_GATEWAY` (defaults to `192.168.122.1`).
+* `VM_STATIC_PREFIX` (defaults to `24`).
+* `VM_STATIC_DNS` (defaults to the value of `VM_STATIC_GATEWAY`).
+
+Note that in this configuration you must first disable DHCP for your libvirt network, which can be achieved via `virsh net-edit` to remove the `<dhcp>` stanza, then `virsh net-destroy` followed by `virsh net-start`
+
 ## delete_vm.sh
 
 This script is intended to easily delete the previously SLE Micro VM created with the `create_vm.sh` script.
