@@ -158,13 +158,14 @@ if [ -f ${BASEDIR}/combustion/script ]; then
 	envsubst < ${BASEDIR}/combustion/script > ${TMPDIR}/combustion/script
 	
 	# Copy all combustion related files to the final iso destination parsing the vars
-	for file in ${BASEDIR}/combustion/*.sh; do
-		[ -f "$file" ] || break
-		FILENAME=$(basename ${file})
-		envsubst < ${file} > ${TMPDIR}/combustion/${FILENAME}
-		chmod a+x ${TMPDIR}/combustion/${FILENAME}
-		echo "./${FILENAME}" >> ${TMPDIR}/combustion/script
-	done
+	if ls ${BASEDIR}/combustion/*.sh >/dev/null 2>&1; then
+		for file in ${BASEDIR}/combustion/*.sh; do
+			FILENAME=$(basename ${file})
+			envsubst < ${file} > ${TMPDIR}/combustion/${FILENAME}
+			chmod a+x ${TMPDIR}/combustion/${FILENAME}
+			echo "./${FILENAME}" >> ${TMPDIR}/combustion/script
+		done
+	fi
 fi
 
 # Create an iso
