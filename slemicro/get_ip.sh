@@ -17,7 +17,7 @@ usage(){
 	EOF
 }
 
-while getopts 'f:nh' OPTION; do
+while getopts 'f:n:h' OPTION; do
 	case "${OPTION}" in
 		f)
 			[ -f "${OPTARG}" ] && ENVFILE="${OPTARG}" || die "Parameters file ${OPTARG} not found" 2
