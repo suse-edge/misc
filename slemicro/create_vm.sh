@@ -277,7 +277,7 @@ elif [ $(uname -o) == "GNU/Linux" ]; then
 				break
 			fi
 			echo -n "."
-			VMIP=$(vm_ip)
+			VMIP=$(vm_ip ${VMNAME})
 	done
 else
 	die "VM not deployed. Unsupported operating system" 2
