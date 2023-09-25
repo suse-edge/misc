@@ -26,7 +26,7 @@ vm_ip(){
 		VMIP=$(grep -i "${VMMAC}" -B1 -m1 /var/db/dhcpd_leases | head -1 | awk -F= '{ print $2 }')
 	elif [ $(uname -o) == "GNU/Linux" ]; then
 		IFADDR_SOURCE=""
-		if [ ! -z "${VM_STATIC_IP}" ]; then
+		if [ ! -z "${VM_STATIC_IP:-}" ]; then
 			IFADDR_SOURCE="--source=arp"
 		fi
 		VMIP=$(virsh domifaddr ${VMNAME} ${IFADDR_SOURCE} | awk -F'[ /]+' '/ipv/ {print $5}' )
