@@ -37,4 +37,4 @@ source ${ENVFILE:-${BASEDIR}/.env}
 VMNAME="${NAMEOPTION:-${VMNAME:-slemicro}}"
 set +a
 
-vm_ip
+vm_ip ${VMNAME}

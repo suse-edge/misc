@@ -16,7 +16,7 @@ vm_ip(){
 		# Get the VM IP
 		OUTPUT=$(osascript <<-END
 		tell application "UTM"
-			set vm to virtual machine named "${VMNAME}"
+			set vm to virtual machine named "${1}"
 			set config to configuration of vm
 			get address of item 1 of network interfaces of config
 		end tell
@@ -29,7 +29,7 @@ vm_ip(){
 		if [ ! -z "${VM_STATIC_IP:-}" ]; then
 			IFADDR_SOURCE="--source=arp"
 		fi
-		VMIP=$(virsh domifaddr ${VMNAME} ${IFADDR_SOURCE} | awk -F'[ /]+' '/ipv/ {print $5}' )
+		VMIP=$(virsh domifaddr ${1} ${IFADDR_SOURCE} | awk -F'[ /]+' '/ipv/ {print $5}' )
 	else
 		die "Unsupported operating system" 2
 	fi

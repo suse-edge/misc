@@ -51,7 +51,7 @@ WAIT="${WAIT:-false}"
 set +a
 
 if [ ${VMIP} == false ]; then
-	VMIP=$(vm_ip)
+	VMIP=$(vm_ip ${VMNAME})
 	if [ -z "${VMIP}" ]; then
 		echo "Could not detect IP for VM ${VMNAME}"
 		exit 1
