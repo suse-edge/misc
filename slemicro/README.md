@@ -134,6 +134,12 @@ DISABLEIPV6=true
 REBOOTMGR=false
 # Disable the transactional-updates timers
 TRANSACTIONALUPDATES=false
+# To test registration with elemental
+# Requires latest elemental which includes [this change](https://github.com/rancher/elemental-operator/pull/516)
+ELEMENTAL_REGISTER=true
+# Configuration file downloaded from elemental MachineRegistration
+# Contains the registration URL and cert to connect to elemental
+ELEMENTAL_CONFIG="$HOME/Downloads/test_registrationURL.yaml"
 EOF
 ```
 

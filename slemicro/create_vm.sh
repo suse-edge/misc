@@ -52,6 +52,8 @@ EXTRADISKS="${EXTRADISKS:-false}"
 VM_NETWORK=${VM_NETWORK:-default}
 REBOOTMGR="${REBOOTMGR:-false}"
 TRANSACTIONALUPDATES="${TRANSACTIONALUPDATES:-false}"
+ELEMENTAL_REGISTER=${ELEMENTAL_REGISTER:-}
+ELEMENTAL_CONFIG=${ELEMENTAL_CONFIG:-}
 set +a
 
 if [ $(uname -o) == "Darwin" ]; then
@@ -156,7 +158,11 @@ if [ -f ${BASEDIR}/combustion/script ]; then
 
 	# Parse the file and copy it to the final ISO
 	envsubst < ${BASEDIR}/combustion/script > ${TMPDIR}/combustion/script
-	
+
+	if [ ! -z "${ELEMENTAL_CONFIG}" ]; then
+		cp ${ELEMENTAL_CONFIG} ${TMPDIR}/combustion/elemental_config.yaml
+	fi
+
 	# Copy all combustion related files to the final iso destination parsing the vars
 	if ls ${BASEDIR}/combustion/*.sh >/dev/null 2>&1; then
 		for file in ${BASEDIR}/combustion/*.sh; do
