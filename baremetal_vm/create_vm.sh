@@ -136,7 +136,8 @@ spec:
     checksum: "http://$IP_ADDR:8080/${IMG_FILENAME}.md5sum"
   bootMACAddress: $NODEMAC
   bootMode: legacy
-  
+  rootDeviceHints:
+    deviceName: ${DEVICE_HINT}
   bmc:
     address: redfish-virtualmedia+http://$IP_ADDR:8000/redfish/v1/Systems/$NODEID
     disableCertificateVerification: true
