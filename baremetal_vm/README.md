@@ -28,34 +28,36 @@ This script creates a VM to emulate a bare-metal host, intended for developer te
 
 ### Prerequisites
 
-* Currently only works with libvirt on Linux, libvirt is assumed to be installed and operational.
+* Currently only works on Linux x86_64
+* libvirt is assumed to be installed and operational
 * Helm should be locally installed
 * Existing management cluster/node (see below)
 * Metal<sup>3</sup> chart installed (see below)
 
 #### Deploying management cluster/node
 
-A k8s cluster must be running to host the Metal<sup>3</sup> services, this can be deployed via the [slemicro scripts](./slemicro/README.md)
+A k8s cluster must be running to host the Metal<sup>3</sup> services, this can be deployed via the [slemicro scripts](../slemicro/README.md)
 
-After the cluster is running we require some DNS names to reference the VM IP (assuming a single-node k3s cluster), so that the
-BareMetalHost VMs created in the following steps can resolve the Ironic endpoints.
-
-This can be achieved by updating the libvirt network for the VMs (either `default` or that referred to via `VM_NETWORK`):
+To operate with MetalLB the deployed cluster should disable the service LB e.g for k3s specify the following in your `slemicro` install `.env`
 
 ```
-> ./get_ip.sh
-192.168.122.116
+INSTALL_CLUSTER_EXEC="server --cluster-init --write-kubeconfig-mode=644 --disable=servicelb"
+````
 
-> cat > /tmp/dns.xml << EOF
-<host ip='192.168.122.116'>
-  <hostname> boot.ironic.suse.baremetal </hostname>
-  <hostname> api.ironic.suse.baremetal </hostname>
-  <hostname> inspector.ironic.suse.baremetal </hostname>
-  <hostname> media.suse.baremetal </hostname>
-</host>
-EOF
-> virsh net-update default add --section dns-host --xml dns.xml --live
+Additionally we require a reserved IP for MetalLB to assign for access to the provisioning services, this can be enabled by adjusting
+the DHCP range for the libvirt network, e.g using `virsh net-edit` adjust the `start` similar to below, which allows us to reserve ips under `.20`
+for static assignment:
+
 ```
+  <ip address='192.168.122.1' netmask='255.255.255.0'>
+    <dhcp>
+      <range start='192.168.122.20' end='192.168.122.254'/>
+    </dhcp>
+  </ip>
+```
+
+Note that after editing the network you must `virsh net-destroy` then `virsh net-start` for the changes to take effect (which will disconnect
+any running VMs so they will also require a destroy/start).
 
 #### Metal<sup>3</sup> chart installation
 
@@ -63,39 +65,72 @@ The metal3 chart can be installed with a minimal configuration via the following
 
 Note this assumes that kubectl is configured e.g via the `KUBECONFIG` variable to connect to the management cluster created in the previous step.
 
-First enable the charts repo and create a values file which disables the provisioning network:
+First deploy cert-manager and MetalLB - in this example we're using `192.168.122.10` as the reserved IP for access to Ironic services:
+
 
 ```
+helm repo add jetstack https://charts.jetstack.io
 helm repo add suse-edge https://suse-edge.github.io/charts
 helm repo update
 
-cat > disable_provnet.yaml <<EOF
-global:
-  enable_dnsmasq: false
-  enable_pxe_boot: false
-  provisioningInterface: ""
-  provisioningIP: ""
-  enable_metal3_media_server: false
+helm install \
+  cert-manager jetstack/cert-manager \
+  --namespace cert-manager \
+  --create-namespace \
+  --set installCRDs=true
+
+
+helm install \
+  metallb suse-edge/metallb \
+  --namespace metallb-system \
+  --create-namespace
+
+export STATIC_IRONIC_IP=192.168.123.10
+cat <<-EOF | kubectl apply -f -
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: ironic-ip-pool
+  namespace: metallb-system
+spec:
+  addresses:
+  - ${STATIC_IRONIC_IP}/32
+  serviceAllocation:
+    priority: 100
+    serviceSelectors:
+    - matchExpressions:
+      - {key: app.kubernetes.io/name, operator: In, values: [metal3-ironic]}
+EOF
+
+cat <<-EOF | kubectl apply -f -
+apiVersion: metallb.io/v1beta1
+kind: L2Advertisement
+metadata:
+  name: ironic-ip-pool-l2-adv
+  namespace: metallb-system
+spec:
+  ipAddressPools:
+  - ironic-ip-pool
 EOF
 ```
 
-Then install the chart from the same directory, using the values file:
+Then we deploy Metal<sup>3</sup>
 
 ```
-helm install metal3 suse-edge/metal3 -f ./disable_provnet.yaml
+helm install metal3 suse-edge/metal3 \
+  --namespace metal3-system \
+  --create-namespace \
+  --set global.ironicIP="${STATIC_IRONIC_IP}" 
 ```
 
 After some time this should result in a running Metal<sup>3</sup> deployment:
 
 ```
-> kubectl get pods
-NAME                                                    READY   STATUS    RESTARTS   AGE
-baremetal-operator-controller-manager-d6b4fcb69-zxpxr   2/2     Running   0          27m
-metal3-metal3-external-dns-59667c9c85-qh9st             1/1     Running   0          27m
-metal3-metal3-ironic-854c76c9f9-8qk5p                   4/4     Running   0          27m
-metal3-metal3-mariadb-6db7c7dd5f-ktjpg                  1/1     Running   0          27m
-metal3-metal3-powerdns-59cf76f57d-bk5sf                 2/2     Running   0          27m
-
+kubectl get pods -n metal3-system
+NAME                                                     READY   STATUS    RESTARTS   AGE
+baremetal-operator-controller-manager-6dd6df675c-6hzlr   2/2     Running   0          3m50s
+metal3-metal3-ironic-59469f9498-gq5lv                    4/4     Running   0          3m50s
+metal3-metal3-mariadb-6db7c7dd5f-kstlp                   1/1     Running   0          3m50s
 ```
 
 ### Enviroment variables
@@ -150,6 +185,7 @@ baremetalhost   provisioned              true             3m3s
 
 * To better understand the BMH states, refer to the [upstream state-machine docs](https://github.com/metal3-io/baremetal-operator/blob/main/docs/baremetalhost-states.md)
 * Refer to the upstream API docs for details of the [BareMetalHost API](https://github.com/metal3-io/baremetal-operator/blob/main/docs/api.md)
+* Note that you can create multiple VMs e.g with `./create_vm.sh -n somename_123` (but ensure the same name is passed to `delete_vm.sh`)
 
 ### Troubleshooting
 
