@@ -5,17 +5,18 @@ source common.sh
 
 usage(){
 	cat <<-EOF
-	Usage: ${0} [-f <path/to/variables/file>] [-n <vmname>] [-i <ip>] [-w]
+	Usage: ${0} [-f <path/to/variables/file>] [-n <vmname>] [-i <ip>] [-w] [-o <filename>]
 	
 	Options:
 	 -f		(Optional) Path to the variables file
 	 -n		(Optional) Virtual machine name
 	 -i		(Optional) Virtual machine IP
+	 -o		(Optional) Output filename (instead of stdout)
 	 -w		(Optional) Wait for the API/Rancher to be available
 	EOF
 }
 
-while getopts 'f:n:i:wh' OPTION; do
+while getopts 'f:n:i:o:wh' OPTION; do
 	case "${OPTION}" in
 		f)
 			[ -f "${OPTARG}" ] && ENVFILE="${OPTARG}" || die "Parameters file ${OPTARG} not found" 2
@@ -25,6 +26,9 @@ while getopts 'f:n:i:wh' OPTION; do
 			;;
 		i)
 			VMIP="${OPTARG}"
+			;;
+		o)
+			OUTPUT_FILE="${OPTARG}"
 			;;
 		w)
 			WAIT=true
@@ -48,6 +52,7 @@ RANCHERFINALPASSWORD="${RANCHERFINALPASSWORD:-false}"
 CLUSTER="${CLUSTER:-false}"
 VMIP="${VMIP:-false}"
 WAIT="${WAIT:-false}"
+OUTPUT_FILE="${OUTPUT_FILE:-}"
 set +a
 
 if [ ${VMIP} == false ]; then
@@ -118,6 +123,10 @@ else
 	curl -sk "https://${RANCHERHOSTNAME}/v3/clusters/local?action=generateKubeconfig" -X 'POST' -H 'content-type: application/json' -H "Authorization: Bearer ${TOKEN}" | jq -r .config > ${TMPKUBECONFIG} 
 fi
 
-echo ${TMPKUBECONFIG}
-
-exit 0
+if [ -z "${OUTPUT_FILE}" ]; then
+  cat ${TMPKUBECONFIG}
+  rm ${TMPKUBECONFIG}
+else
+  mv ${TMPKUBECONFIG} ${OUTPUT_FILE}
+  echo "${OUTPUT_FILE} updated"
+fi
