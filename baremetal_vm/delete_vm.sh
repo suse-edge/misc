@@ -37,8 +37,10 @@ if [ $(uname -o) == "Darwin" ]; then
 	)
 elif [ $(uname -o) == "GNU/Linux" ]; then
 	if virsh list --all --name | grep -q ${VMNAME} ; then
+		UUID=$(virsh domuuid ${VMNAME})
 		[ "$(virsh domstate ${VMNAME} 2>/dev/null)" == "running" ] && virsh destroy ${VMNAME}
 		virsh undefine ${VMNAME}
+		rm -f ${VMFOLDER}/boot-*-iso-${UUID}.img
 	else
 		die "${VMNAME} not found" 2
 	fi
@@ -46,10 +48,11 @@ else
 	die "Unsupported operating system" 2
 fi
 
-[ -f ${VMFOLDER}/${VMNAME}.raw ] && rm -f ${VMFOLDER}/${VMNAME}.raw
-[ -f ${VMFOLDER}/${VMNAME}.qcow2 ] && rm -f ${VMFOLDER}/${VMNAME}.qcow2
-[ -f ${VMFOLDER}/${VMNAME}.yaml ] && rm -f ${VMFOLDER}/${VMNAME}.yaml
+rm -f ${VMFOLDER}/${VMNAME}.raw
+rm -f ${VMFOLDER}/${VMNAME}.qcow2
+rm -f ${VMFOLDER}/${VMNAME}.yaml
+rm -f ${VMFOLDER}/${VMNAME}.xml
 [ "${EXTRADISKS}" != false ] && rm -f ${VMFOLDER}/${VMNAME}-extra-disk-*.raw
 
 BMH_NAME=$(echo "${VMNAME}" | tr '[:upper:]' '[:lower:]')
-kubectl delete bmh ${BMH_NAME}
+kubectl delete bmh ${BMH_NAME} --force --grace-period=0
