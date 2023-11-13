@@ -28,6 +28,9 @@
   - [Prerequisites](#prerequisites-2)
   - [Enviroment variables](#enviroment-variables-2)
   - [Usage](#usage-2)
+- [getvmsip.sh](#getvmsip)
+  - [Prerequisites](#prerequisites-3)
+  - [Usage](#usage-3)
 - [What's next?](#whats-next)
 
 ## create_vm.sh
@@ -307,6 +310,29 @@ Usage: ./get_ip.sh [-f <path/to/variables/file>] [-n <vmname>]
 Options:
  -f		(Optional) Path to the variables file
  -n		(Optional) Virtual machine name
+```
+
+## getvmsip.sh
+
+This script is intended to easily show all the VMs IP on the host.
+
+It doesn't require any parameter
+
+### Prerequisites
+
+* A VM already deployed
+
+### Usage
+
+```bash
+$ ./getvmsip.sh
+bootstraper 192.168.122.2
+host1rke2 192.168.122.128
+host2rke2 192.168.122.77
+host3rke2 192.168.122.31
+host1k3s 192.168.122.180
+host2k3s 192.168.122.136
+host3k3s 192.168.122.215
 ```
 
 ## What's next?
