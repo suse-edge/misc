@@ -24,13 +24,16 @@
   - [Prerequisites](#prerequisites-2)
   - [Enviroment variables](#enviroment-variables-2)
   - [Usage](#usage-2)
-- [get\ip.sh](#get_ip)
+- [get\_ip.sh](#get_ipsh)
   - [Prerequisites](#prerequisites-2)
   - [Enviroment variables](#enviroment-variables-2)
   - [Usage](#usage-2)
-- [getvmsip.sh](#getvmsip)
+- [getvmsip.sh](#getvmsipsh)
   - [Prerequisites](#prerequisites-3)
   - [Usage](#usage-3)
+- [make\_unattended.sh](#make_unattendedsh)
+  - [Prerequisites](#prerequisites-4)
+  - [Usage](#usage-4)
 - [What's next?](#whats-next)
 
 ## create_vm.sh
@@ -333,6 +336,30 @@ host3rke2 192.168.122.31
 host1k3s 192.168.122.180
 host2k3s 192.168.122.136
 host3k3s 192.168.122.215
+```
+
+## make_unattended.sh
+
+This script is intended to generate a completely unattended SLE Micro SelfInstall ISO.
+
+It requires the path to the SLE Micro SelfInstall ISO and it will generate a `tweaked.iso` file in the current folder.
+
+### Prerequisites
+
+* A SLE Micro SelfInstall ISO (SLE-Micro.x86_64-5.5.0-Default-SelfInstall-GM.install.iso)
+* xorriso installed
+* Be executed as root
+
+### Usage
+
+```bash
+$ ./make_unattended.sh -h
+Usage: ./make_unattended.sh -i SLE-Micro-SelfInstall.iso [-o tweaked-SLE-Micro-SelfInstall.iso] [-d /dev/sda]
+
+Options:
+ -i		Path to the original SLE Micro iso file
+ -o		(Optional) Path to the tweaked-SLE-Micro-SelfInstall.iso file (./tweaked.iso by default)
+ -d		(Optional) Disk device where SLE Micro will be installed (if not provided, the first one that the installer finds)
 ```
 
 ## What's next?

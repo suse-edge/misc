@@ -26,3 +26,4 @@ A miscelaneous repository that contains scripts, tools and other assets from the
 | [slemicro/get_kubeconfig.sh](slemicro/get_kubeconfig.sh) | Get the Kubeconfig file from a SLE Micro VM previously deployed with the [slemicro/create_vm.sh](slemicro/create_vm.sh) script |
 | [slemicro/get_ip.sh](slemicro/get_ip.sh) | Get the IP from a SLE Micro VM previously deployed with the [slemicro/create_vm.sh](slemicro/create_vm.sh) script |
 | [slemicro/getvmsip.sh](slemicro/getvmsip.sh) | Show all the VMs IP on the host |
+| [slemicro/make_unattended.sh](slemicro/make_unattended.sh) | Generates a completely unattended SLE Micro SelfInstall ISO |
