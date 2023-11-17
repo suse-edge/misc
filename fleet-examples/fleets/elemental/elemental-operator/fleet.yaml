@@ -1,3 +1,4 @@
 defaultNamespace: cattle-elemental-system
 helm:
-  chart: oci://registry.suse.com/rancher/elemental-operator-chart
+  chart: elemental-operator
+  repo: https://rancher.github.io/elemental-operator/stable/
