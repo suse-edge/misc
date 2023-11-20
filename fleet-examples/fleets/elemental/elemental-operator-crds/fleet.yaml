@@ -1,4 +1,4 @@
 defaultNamespace: cattle-elemental-system
 helm:
-  chart: elemental-operator-crd
+  chart: elemental-operator-crds
   repo: https://rancher.github.io/elemental-operator/stable/
