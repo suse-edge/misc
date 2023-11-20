@@ -67,91 +67,115 @@ TMPDIR="$(mktemp -d -t make_unattended.XXXXXX)"
 trap "rm -rf '$TMPDIR'" EXIT
 
 # We mount the ISO and extract the files we need
-mkdir -p "${TMPDIR}"/{orig,init}
+mkdir -p "${TMPDIR}"/orig
 mount "${INPUTISO}" "${TMPDIR}"/orig >/dev/null 2>&1
-cp "${TMPDIR}"/orig/boot/x86_64/loader/initrd "${TMPDIR}"/init
+cp "${TMPDIR}"/orig/boot/x86_64/loader/initrd "${TMPDIR}"/initrd
 cp "${TMPDIR}"/orig/boot/grub2/grub.cfg "${TMPDIR}"/grub.cfg-orig
 umount "${TMPDIR}"/orig
 rmdir "${TMPDIR}"/orig
-chmod 666 "${TMPDIR}"/init/initrd
 
-# The initrd contained in the iso is basically two cpios concatenated
-# The first one contains the microcode essentially (early cpio):
+# First step is to extract the .profile from the second cpio
+lsinitrd "${TMPDIR}"/initrd .profile > "${TMPDIR}"/.profile
 
-# dd if=initrd-orig skip=0 | cpio -it
-# .
-# early_cpio
-# kernel
-# kernel/x86
-# kernel/x86/microcode
-# kernel/x86/microcode/AuthenticAMD.bin
-# kernel/x86/microcode/GenuineIntel.bin
-# 25782 blocks
-
-# And the second one contains the filesystem compressed with zstd:
-
-# dd if=./initrd-orig skip=25782 | zstd -dc | cpio -it
-# .
-# .profile
-# bin
-# bin/arping
-# bin/awk
-# bin/basename
-# bin/bash
-# bin/cat
-# bin/chmod
-# bin/chown
-# bin/cp
-# bin/date
-# [... a lot more files ...]
-
-# The .profile is the one used by kiwi to perform the installation
-# We need to add the kiwi_oemunattended flag to it.
-# There is also the kiwi_oemunattended_id https://github.com/OSInside/kiwi/blob/master/dracut/modules.d/90kiwi-dump/kiwi-dump-image.sh
-# which we can use to specify the device we want to use to write the image into.
-
-# First step is to extract the initrd filesystem content (the second cpio)
-# pushd and popd commands are needed because lsinitrd doesn't have a way to extract the data than to the current folder
-pushd "${TMPDIR}"/init > /dev/null
-lsinitrd --unpack ./initrd
-popd > /dev/null
-
-# Then, in order to be able to recreate it, we need to get the first cpio as well
-# We just list the content from it but we need stderr as this is where cpio prints the number of blocks written
-# The usual cat initrd | cpio -it gives a pipefail (because of cat), so use -F instead (which should be better)
-BLOCKS=$(cpio -itF "${TMPDIR}"/init/initrd 2>&1 | awk '/blocks/ { print $1 }')
-dd if="${TMPDIR}"/init/initrd skip=0 count="${BLOCKS}" of="${TMPDIR}"/first >/dev/null 2>&1
-
-# We have everything we need from initrd
-rm -f "${TMPDIR}"/init/initrd
-
-# We inject the unattended flag
-echo "kiwi_oemunattended='true'" >> "${TMPDIR}"/init/.profile
+# Then, append the kiwi_oem flags
+echo "kiwi_oemunattended='true'" >> "${TMPDIR}"/.profile
 
 # Specify the destination disk if present
 if [ -n "${WRITETO:-}" ]; then
-	echo "kiwi_oemunattended_id='${WRITETO}'" >> "${TMPDIR}"/init/.profile
+	echo "kiwi_oemunattended_id='${WRITETO}'" >> "${TMPDIR}"/.profile
 fi
 
-# This will generate the "second" cpio
-pushd "${TMPDIR}"/init/ > /dev/null
-find . | cpio -o -H newc -F "${TMPDIR}"/second 2>/dev/null
+# Finally, we append the .profile into the initrd as:
+pushd "${TMPDIR}" > /dev/null
+echo ./.profile | cpio --quiet -o -H newc >> "${TMPDIR}"/initrd
 popd > /dev/null
 
-# We can clean up the extracted one
-rm -Rf "${TMPDIR}"/init
+#### Old method, keeping this here just for reference
+# # We mount the ISO and extract the files we need
+# mkdir -p "${TMPDIR}"/{orig,init}
+# mount "${INPUTISO}" "${TMPDIR}"/orig >/dev/null 2>&1
+# cp "${TMPDIR}"/orig/boot/x86_64/loader/initrd "${TMPDIR}"/init
+# cp "${TMPDIR}"/orig/boot/grub2/grub.cfg "${TMPDIR}"/grub.cfg-orig
+# umount "${TMPDIR}"/orig
+# rmdir "${TMPDIR}"/orig
+# chmod 666 "${TMPDIR}"/init/initrd
 
-# Now we need to compress the filesystem
-zstd -q "${TMPDIR}"/second
-rm -f "${TMPDIR}"/second
+# # The initrd contained in the iso is basically two cpios concatenated
+# # The first one contains the microcode essentially (early cpio):
 
-# And create the proper initrd by concatenating both
-cat "${TMPDIR}"/first "${TMPDIR}"/second.zst > "${TMPDIR}"/initrd
-rm -f "${TMPDIR}"/first "${TMPDIR}"/second.zst
+# # dd if=initrd-orig skip=0 | cpio -it
+# # .
+# # early_cpio
+# # kernel
+# # kernel/x86
+# # kernel/x86/microcode
+# # kernel/x86/microcode/AuthenticAMD.bin
+# # kernel/x86/microcode/GenuineIntel.bin
+# # 25782 blocks
+
+# # And the second one contains the filesystem compressed with zstd:
+
+# # dd if=./initrd-orig skip=25782 | zstd -dc | cpio -it
+# # .
+# # .profile
+# # bin
+# # bin/arping
+# # bin/awk
+# # bin/basename
+# # bin/bash
+# # bin/cat
+# # bin/chmod
+# # bin/chown
+# # bin/cp
+# # bin/date
+# # [... a lot more files ...]
+
+# # The .profile is the one used by kiwi to perform the installation
+# # We need to add the kiwi_oemunattended flag to it.
+# # There is also the kiwi_oemunattended_id https://github.com/OSInside/kiwi/blob/master/dracut/modules.d/90kiwi-dump/kiwi-dump-image.sh
+# # which we can use to specify the device we want to use to write the image into.
+
+# # First step is to extract the initrd filesystem content (the second cpio)
+# # pushd and popd commands are needed because lsinitrd doesn't have a way to extract the data than to the current folder
+# pushd "${TMPDIR}"/init > /dev/null
+# lsinitrd --unpack ./initrd
+# popd > /dev/null
+
+# # Then, in order to be able to recreate it, we need to get the first cpio as well
+# # We just list the content from it but we need stderr as this is where cpio prints the number of blocks written
+# # The usual cat initrd | cpio -it gives a pipefail (because of cat), so use -F instead (which should be better)
+# BLOCKS=$(cpio -itF "${TMPDIR}"/init/initrd 2>&1 | awk '/blocks/ { print $1 }')
+# dd if="${TMPDIR}"/init/initrd skip=0 count="${BLOCKS}" of="${TMPDIR}"/first >/dev/null 2>&1
+
+# # We have everything we need from initrd
+# rm -f "${TMPDIR}"/init/initrd
+
+# # We inject the unattended flag
+# echo "kiwi_oemunattended='true'" >> "${TMPDIR}"/init/.profile
+
+# # Specify the destination disk if present
+# if [ -n "${WRITETO:-}" ]; then
+# 	echo "kiwi_oemunattended_id='${WRITETO}'" >> "${TMPDIR}"/init/.profile
+# fi
+
+# # This will generate the "second" cpio
+# pushd "${TMPDIR}"/init/ > /dev/null
+# find . | cpio -o -H newc -F "${TMPDIR}"/second 2>/dev/null
+# popd > /dev/null
+
+# # We can clean up the extracted one
+# rm -Rf "${TMPDIR}"/init
+
+# # Now we need to compress the filesystem
+# zstd -q "${TMPDIR}"/second
+# rm -f "${TMPDIR}"/second
+
+# # And create the proper initrd by concatenating both
+# cat "${TMPDIR}"/first "${TMPDIR}"/second.zst > "${TMPDIR}"/initrd
+# rm -f "${TMPDIR}"/first "${TMPDIR}"/second.zst
 
 # This will remove the need to select "install" in grub
-echo "set timeout=3" > "${TMPDIR}"/pre-grub.txt
-echo "set timeout_style=menu" >> "${TMPDIR}"/pre-grub.txt
+echo -e "set timeout=3\nset timeout_style=menu" > "${TMPDIR}"/pre-grub.txt
 cat "${TMPDIR}"/pre-grub.txt "${TMPDIR}"/grub.cfg-orig > "${TMPDIR}"/grub.cfg
 rm -f "${TMPDIR}"/pre-grub.txt "${TMPDIR}"/grub.cfg-orig
 
