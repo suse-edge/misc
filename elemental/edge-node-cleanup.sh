@@ -15,7 +15,6 @@
 #
 # This script cleans up the installed Kubernetes cluster so no traces remain
 # and forces a re-registration with the original Elemental registration config.
-# It is expected that certain parts of this script will fail.
 #
 # WARNING: This script *will* cause data loss as it removes all Kubernetes
 #          persistent data. There is also an unattended switch for automated
@@ -73,16 +72,19 @@ systemctl kill --signal=SIGKILL elemental-system-agent
 systemctl kill --signal=SIGKILL rancher-system-agent
 
 # Kill all running Kubernetes services
-rke2-killall.sh
-k3s-killall.sh
+if command -v rke2-killall.sh &> /dev/null; then rke2-killall.sh; fi
+if command -v k3s-killall.sh &> /dev/null; then k3s-killall.sh; fi
 
 # Uninstall all deployed Kubernetes components
-rke2-uninstall.sh
-k3s-uninstall.sh
+if command -v rke2-uninstall.sh &> /dev/null; then rke2-uninstall.sh; fi
+if command -v k3s-uninstall.sh &> /dev/null; then k3s-uninstall.sh; fi
 
 # Remove the rancher-system-agent as this gets reinstalled via Elemental
-sh /opt/rancher-system-agent/bin/rancher-system-agent-uninstall.sh
-rm -rf /opt/rancher-system-agent
+if [ -x /opt/rancher-system-agent/bin/rancher-system-agent-uninstall.sh ];
+then
+	sh /opt/rancher-system-agent/bin/rancher-system-agent-uninstall.sh
+	rm -rf /opt/rancher-system-agent
+fi
 
 # Clean up all old configuration directories and Elemental state
 rm -rf /etc/rancher
