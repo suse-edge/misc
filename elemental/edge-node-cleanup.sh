@@ -71,12 +71,15 @@ fi
 systemctl kill --signal=SIGKILL elemental-system-agent
 systemctl kill --signal=SIGKILL rancher-system-agent
 
-# Kill all running Kubernetes services
-if command -v rke2-killall.sh &> /dev/null; then rke2-killall.sh; fi
-if command -v k3s-killall.sh &> /dev/null; then k3s-killall.sh; fi
+# Kill and uninstall all rke2 services
+if [ -x /opt/rke2/bin/rke2-uninstall.sh ];
+then
+	/opt/rke2/bin/rke2-killall.sh
+	/opt/rke2/bin/rke2-uninstall.sh
+fi
 
-# Uninstall all deployed Kubernetes components
-if command -v rke2-uninstall.sh &> /dev/null; then rke2-uninstall.sh; fi
+# Kill and uninstall all k3s services
+if command -v k3s-killall.sh &> /dev/null; then k3s-killall.sh; fi
 if command -v k3s-uninstall.sh &> /dev/null; then k3s-uninstall.sh; fi
 
 # Remove the rancher-system-agent as this gets reinstalled via Elemental
