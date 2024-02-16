@@ -1,0 +1,26 @@
+global:
+  ironicIP: ${MGMT_CLUSTER_IP}
+  enable_vmedia_tls: false
+
+# See /opt/media for media-server images
+metal3-media:
+  service:
+    type: NodePort
+    port: 6280
+
+metal3-ironic:
+  global:
+    predictableNicNames: "false"
+  service:
+    type: NodePort
+  persistence:
+    ironic:
+      storageClass: local-path
+
+metal3-mariadb:
+  persistence:
+    storageClass: local-path
+
+metal3-media:
+  mediaVolume:
+    hostPath: /home/metal3/bmh-image-cache
