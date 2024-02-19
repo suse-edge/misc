@@ -20,7 +20,6 @@ spec:
   rootDeviceHints:
     deviceName: /dev/nvme0n1
   bmc:
-    #example of address: redfish-virtualmedia://10.168.200.75/redfish/v1/Systems/1/
     address: ${BMC_ADDRESS}
     disableCertificateVerification: true
     credentialsName: example-demo-credentials

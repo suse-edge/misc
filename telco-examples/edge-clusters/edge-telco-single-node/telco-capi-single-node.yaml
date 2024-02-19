@@ -2,7 +2,7 @@
 apiVersion: cluster.x-k8s.io/v1beta1
 kind: Cluster
 metadata:
-  name: flexran-demo2-cluster
+  name: single-node-cluster
   namespace: default
 spec:
   clusterNetwork:
@@ -15,33 +15,33 @@ spec:
   controlPlaneRef:
     apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
     kind: RKE2ControlPlane
-    name: flexran-demo2-cluster
+    name: single-node-cluster
   infrastructureRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: Metal3Cluster
-    name: flexran-demo2-cluster
+    name: single-node-cluster
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: Metal3Cluster
 metadata:
-  name: flexran-demo2-cluster
+  name: single-node-cluster
   namespace: default
 spec:
   controlPlaneEndpoint:
-    host: 10.168.200.85
+    host: ${EDGE_CONTROL_PLANE_IP}
     port: 6443
   noCloudProvider: true
 ---
 apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
 kind: RKE2ControlPlane
 metadata:
-  name: flexran-demo2-cluster
+  name: single-node-cluster
   namespace: default
 spec:
   infrastructureRef:
     apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
     kind: Metal3MachineTemplate
-    name: flexran-demo2-cluster-controlplane
+    name: single-node-cluster-controlplane
   replicas: 1
   serverConfig:
     cni: calico
@@ -54,10 +54,6 @@ spec:
       config: |
         variant: fcos
         version: 1.4.0
-        passwd:
-          users:
-           - name: root
-             password_hash: "$y$j9T$/t4THH10B7esLiIVBROsE.$G1lyxfy/MoFVOrfXSnWAUq70Tf3mjfZBIe18koGOuXB"
         storage:
           links:
             - path: /var/sriovdp-daemonset.yaml
@@ -82,26 +78,26 @@ spec:
                                   "resourceName": "intel_fec_5g",
                                   "devicetype": "accelerator",
                                   "selectors": {
-                                      "vendors": ["8086"],
-                                      "devices": ["57c1"]
+                                      "vendors": ["${SRIOV_VENDOR}"],
+                                      "devices": ["${SRIOV_DEVICE}"]
                                   }
                               },
                               {
                                   "resourceName": "intel_sriov_odu",
                                   "selectors": {
-                                      "vendors": ["8086"],
-                                      "devices": ["1889"],
+                                      "vendors": ["${SRIOV_VENDOR}"],
+                                      "devices": ["${SRIOV_DEVICE}"],
                                       "drivers": ["vfio-pci"],
-                                      "pfNames": ["eth6"]
+                                      "pfNames": ["${SRIOV_NET_INTERFACE}"]
                                   }
                               },
                               {
                                   "resourceName": "intel_sriov_oru",
                                   "selectors": {
-                                      "vendors": ["8086"],
-                                      "devices": ["1889"],
+                                      "vendors": ["${SRIOV_VENDOR}"],
+                                      "devices": ["${SRIOV_DEVICE}"],
                                       "drivers": ["vfio-pci"],
-                                      "pfNames": ["eth7"]
+                                      "pfNames": ["${SRIOV_NET_INTERFACE}"]
                                   }
                               }
                           ]
@@ -122,11 +118,11 @@ spec:
             - hugepagesz=1G hugepages=40
             - hugepagesz=2M hugepages=0
             - default_hugepagesz=1G
-            - kthread_cpus=0,20,21,39
-            - irqaffinity=0,20,21,39
-            - isolcpu=1-18,21-38
-            - nohz_full=0,20,21,39
-            - rcu_nocbs=0,20,21,39
+            - kthread_cpus=${NON-ISOLATED_CPU_CORES}
+            - irqaffinity=${NON-ISOLATED_CPU_CORES}
+            - isolcpu=${ISOLATED_CPU_CORES}
+            - nohz_full=${NON-ISOLATED_CPU_CORES}
+            - rcu_nocbs=$NON-ISOLATED_CPU_CORES
             - rcu_nocb_poll
         systemd:
           units:
@@ -143,6 +139,7 @@ spec:
                 User=root
                 ExecStartPre=/bin/sh -c "mount -L config-2 /mnt"
                 ExecStart=/bin/sh -c "sed -i \"s/BAREMETALHOST_UUID/$(jq -r .uuid /mnt/openstack/latest/meta_data.json)/\" /etc/rancher/rke2/config.yaml"
+                ExecStart=/bin/sh -c "echo \"node-name: $(jq -r .name /mnt/openstack/latest/meta_data.json)\" >> /etc/rancher/rke2/config.yaml"
                 ExecStartPost=/bin/sh -c "umount /mnt"
                 [Install]
                 WantedBy=multi-user.target
@@ -157,7 +154,7 @@ spec:
                 User=root
                 Type=forking
                 TimeoutStartSec=900
-                ExecStart=/bin/sh -c "cpupower frequency-set -g performance; cpupower frequency-set -u 2500000; cpupower frequency-set -d 2500000"
+                ExecStart=/bin/sh -c "cpupower frequency-set -g performance; cpupower frequency-set -u ${CPU_FREQUENCY}; cpupower frequency-set -d ${CPU_FREQUENCY}"
                 RemainAfterExit=yes
                 KillMode=process
                 [Install]
@@ -172,7 +169,7 @@ spec:
                 [Service]
                 Type=oneshot
                 User=root
-                ExecStart=/bin/sh -c "echo isolated_cores=1-18,21-38 > /etc/tuned/cpu-partitioning-variables.conf"
+                ExecStart=/bin/sh -c "echo isolated_cores=${ISOLATED_CPU_CORES} > /etc/tuned/cpu-partitioning-variables.conf"
                 ExecStartPost=/bin/sh -c "tuned-adm profile cpu-partitioning"
                 ExecStartPost=/bin/sh -c "systemctl enable tuned.service"
                 [Install]
@@ -189,16 +186,9 @@ spec:
                 Type=forking
                 TimeoutStartSec=900
                 ExecStart=/bin/sh -c "modprobe vfio-pci enable_sriov=1 disable_idle_d3=1"
-                ExecStartPost=/bin/sh -c "dpdk-devbind.py -b vfio-pci 0000:f7:00.0"
-                ExecStartPost=/bin/sh -c "echo 1 > /sys/bus/pci/devices/0000:f7:00.0/sriov_numvfs"
+                ExecStartPost=/bin/sh -c "dpdk-devbind.py -b vfio-pci ${DPDK_PCI_ADDRESS}"
+                ExecStartPost=/bin/sh -c "echo 1 > /sys/bus/pci/devices/${DPDK_PCI_ADDRESS}/sriov_numvfs"
                 ExecStartPost=/bin/sh -c "pf_bb_config ACC200 -v 00112233-4455-6677-8899-aabbccddeeff -c /opt/pf-bb-config/acc200_config_vf_5g.cfg; sleep 2"
-                ExecStartPost=/bin/sh -c "echo 4 > /sys/bus/pci/devices/0000:70:00.0/sriov_numvfs"
-                ExecStartPost=/bin/sh -c "sleep 10"
-                ExecStartPost=/bin/sh -c "ip link set eth6 vf 0 mac 00:11:22:33:00:00 && ip link set eth6 vf 1 mac 00:11:22:33:00:10 && ip link set eth6 vf 2 mac 00:11:22:33:00:20 && ip link set eth6 vf 3 mac 00:11:22:33:00:30"
-                ExecStartPost=/bin/sh -c "echo 4 > /sys/bus/pci/devices/0000:70:00.1/sriov_numvfs"
-                ExecStartPost=/bin/sh -c "sleep 10"
-                ExecStartPost=/bin/sh -c "ip link set eth7 vf 0 mac 00:11:22:33:00:01 && ip link set eth7 vf 1 mac 00:11:22:33:00:11 && ip link set eth7 vf 2 mac 00:11:22:33:00:21 && ip link set eth7 vf 3 mac 00:11:22:33:00:31"
-                ExecStartPost=/bin/sh -c "dpdk-devbind.py -b vfio-pci 0000:70:01.0 0000:70:01.1 0000:70:01.2 0000:70:01.3 0000:70:09.0 0000:70:09.1 0000:70:09.2 0000:70:09.3"
                 RemainAfterExit=yes
                 KillMode=process
                 [Install]
@@ -206,35 +196,35 @@ spec:
     kubelet:
       extraArgs:
         - provider-id=metal3://BAREMETALHOST_UUID
-    version: v1.28.3-rc4+rke2r1
+    version: ${RKE2_VERSION}
     nodeName: "localhost.localdomain"
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: Metal3MachineTemplate
 metadata:
-  name: flexran-demo2-cluster-controlplane
+  name: single-node-cluster-controlplane
   namespace: default
 spec:
   template:
     spec:
       dataTemplate:
-        name: flexran-demo2-cluster-controlplane-template
+        name: single-node-cluster-controlplane-template
       hostSelector:
         matchLabels:
           cluster-role: control-plane
       image:
-        checksum: http://10.168.200.22:8080/eibimage-slemicro55rt-telco.raw.sha256
+        checksum: http://imagecache.local:8080/eibimage-slemicro55rt-telco.raw.sha256
         checksumType: sha256
         format: raw
-        url: http://10.168.200.22:8080/eibimage-slemicro55rt-telco.raw
+        url: http://imagecache.local:8080/eibimage-slemicro55rt-telco.raw
 ---
 apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
 kind: Metal3DataTemplate
 metadata:
-  name: flexran-demo2-cluster-controlplane-template
+  name: single-node-cluster-controlplane-template
   namespace: default
 spec:
-  clusterName: flexran-demo2-cluster
+  clusterName: single-node-cluster
   metaData:
     objectNames:
       - key: name
