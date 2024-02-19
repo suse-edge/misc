@@ -1,0 +1,256 @@
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  name: flexran-demo2-cluster
+  namespace: default
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks:
+        - 192.168.0.0/18
+    services:
+      cidrBlocks:
+        - 10.96.0.0/12
+  controlPlaneRef:
+    apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
+    kind: RKE2ControlPlane
+    name: flexran-demo2-cluster
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: Metal3Cluster
+    name: flexran-demo2-cluster
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: Metal3Cluster
+metadata:
+  name: flexran-demo2-cluster
+  namespace: default
+spec:
+  controlPlaneEndpoint:
+    host: 10.168.200.85
+    port: 6443
+  noCloudProvider: true
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
+kind: RKE2ControlPlane
+metadata:
+  name: flexran-demo2-cluster
+  namespace: default
+spec:
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: Metal3MachineTemplate
+    name: flexran-demo2-cluster-controlplane
+  replicas: 1
+  serverConfig:
+    cni: calico
+    cniMultusEnable: true
+  preRKE2Commands:
+    - curl -Lk https://raw.githubusercontent.com/k8snetworkplumbingwg/sriov-network-device-plugin/master/deployments/sriovdp-daemonset.yaml > /var/sriovdp-daemonset.yaml
+  agentConfig:
+    format: ignition
+    additionalUserData:
+      config: |
+        variant: fcos
+        version: 1.4.0
+        passwd:
+          users:
+           - name: root
+             password_hash: "$y$j9T$/t4THH10B7esLiIVBROsE.$G1lyxfy/MoFVOrfXSnWAUq70Tf3mjfZBIe18koGOuXB"
+        storage:
+          links:
+            - path: /var/sriovdp-daemonset.yaml
+              overwrite: true
+              target: /var/lib/rancher/rke2/server/manifests/sriovdp-daemonset.yaml
+              hard: false
+          files:
+            - path: /var/lib/rancher/rke2/server/manifests/configmap-sriov.yaml
+              overwrite: true
+              contents:
+                inline: |
+                  apiVersion: v1
+                  kind: ConfigMap
+                  metadata:
+                    name: sriovdp-config
+                    namespace: kube-system
+                  data:
+                    config.json: |
+                      {
+                          "resourceList": [
+                              {
+                                  "resourceName": "intel_fec_5g",
+                                  "devicetype": "accelerator",
+                                  "selectors": {
+                                      "vendors": ["8086"],
+                                      "devices": ["57c1"]
+                                  }
+                              },
+                              {
+                                  "resourceName": "intel_sriov_odu",
+                                  "selectors": {
+                                      "vendors": ["8086"],
+                                      "devices": ["1889"],
+                                      "drivers": ["vfio-pci"],
+                                      "pfNames": ["eth6"]
+                                  }
+                              },
+                              {
+                                  "resourceName": "intel_sriov_oru",
+                                  "selectors": {
+                                      "vendors": ["8086"],
+                                      "devices": ["1889"],
+                                      "drivers": ["vfio-pci"],
+                                      "pfNames": ["eth7"]
+                                  }
+                              }
+                          ]
+                      }
+              mode: 0644
+              user:
+                name: root
+              group:
+                name: root
+        kernel_arguments:
+          should_exist:
+            - intel_iommu=on
+            - intel_pstate=passive
+            - processor.max_cstate=1
+            - intel_idle.max_cstate=0
+            - iommu=pt
+            - mce=off
+            - hugepagesz=1G hugepages=40
+            - hugepagesz=2M hugepages=0
+            - default_hugepagesz=1G
+            - kthread_cpus=0,20,21,39
+            - irqaffinity=0,20,21,39
+            - isolcpu=1-18,21-38
+            - nohz_full=0,20,21,39
+            - rcu_nocbs=0,20,21,39
+            - rcu_nocb_poll
+        systemd:
+          units:
+            - name: rke2-preinstall.service
+              enabled: true
+              contents: |
+                [Unit]
+                Description=rke2-preinstall
+                Wants=network-online.target
+                Before=rke2-install.service
+                ConditionPathExists=!/run/cluster-api/bootstrap-success.complete
+                [Service]
+                Type=oneshot
+                User=root
+                ExecStartPre=/bin/sh -c "mount -L config-2 /mnt"
+                ExecStart=/bin/sh -c "sed -i \"s/BAREMETALHOST_UUID/$(jq -r .uuid /mnt/openstack/latest/meta_data.json)/\" /etc/rancher/rke2/config.yaml"
+                ExecStartPost=/bin/sh -c "umount /mnt"
+                [Install]
+                WantedBy=multi-user.target
+            - name: cpu-performance.service
+              enabled: true
+              contents: |
+                [Unit]
+                Description=CPU perfomance
+                Wants=network-online.target
+                After=network.target network-online.target
+                [Service]
+                User=root
+                Type=forking
+                TimeoutStartSec=900
+                ExecStart=/bin/sh -c "cpupower frequency-set -g performance; cpupower frequency-set -u 2500000; cpupower frequency-set -d 2500000"
+                RemainAfterExit=yes
+                KillMode=process
+                [Install]
+                WantedBy=multi-user.target
+            - name: cpu-partitioning.service
+              enabled: true
+              contents: |
+                [Unit]
+                Description=cpu-partitioning
+                Wants=network-online.target
+                After=network.target network-online.target
+                [Service]
+                Type=oneshot
+                User=root
+                ExecStart=/bin/sh -c "echo isolated_cores=1-18,21-38 > /etc/tuned/cpu-partitioning-variables.conf"
+                ExecStartPost=/bin/sh -c "tuned-adm profile cpu-partitioning"
+                ExecStartPost=/bin/sh -c "systemctl enable tuned.service"
+                [Install]
+                WantedBy=multi-user.target
+            - name: dpdk-vf-creation.service
+              enabled: true
+              contents: |
+                [Unit]
+                Description=DPDK VF creation service
+                Wants=network-online.target  rke2-server.target
+                After=network.target network-online.target rke2-server.target
+                [Service]
+                User=root
+                Type=forking
+                TimeoutStartSec=900
+                ExecStart=/bin/sh -c "modprobe vfio-pci enable_sriov=1 disable_idle_d3=1"
+                ExecStartPost=/bin/sh -c "dpdk-devbind.py -b vfio-pci 0000:f7:00.0"
+                ExecStartPost=/bin/sh -c "echo 1 > /sys/bus/pci/devices/0000:f7:00.0/sriov_numvfs"
+                ExecStartPost=/bin/sh -c "pf_bb_config ACC200 -v 00112233-4455-6677-8899-aabbccddeeff -c /opt/pf-bb-config/acc200_config_vf_5g.cfg; sleep 2"
+                ExecStartPost=/bin/sh -c "echo 4 > /sys/bus/pci/devices/0000:70:00.0/sriov_numvfs"
+                ExecStartPost=/bin/sh -c "sleep 10"
+                ExecStartPost=/bin/sh -c "ip link set eth6 vf 0 mac 00:11:22:33:00:00 && ip link set eth6 vf 1 mac 00:11:22:33:00:10 && ip link set eth6 vf 2 mac 00:11:22:33:00:20 && ip link set eth6 vf 3 mac 00:11:22:33:00:30"
+                ExecStartPost=/bin/sh -c "echo 4 > /sys/bus/pci/devices/0000:70:00.1/sriov_numvfs"
+                ExecStartPost=/bin/sh -c "sleep 10"
+                ExecStartPost=/bin/sh -c "ip link set eth7 vf 0 mac 00:11:22:33:00:01 && ip link set eth7 vf 1 mac 00:11:22:33:00:11 && ip link set eth7 vf 2 mac 00:11:22:33:00:21 && ip link set eth7 vf 3 mac 00:11:22:33:00:31"
+                ExecStartPost=/bin/sh -c "dpdk-devbind.py -b vfio-pci 0000:70:01.0 0000:70:01.1 0000:70:01.2 0000:70:01.3 0000:70:09.0 0000:70:09.1 0000:70:09.2 0000:70:09.3"
+                RemainAfterExit=yes
+                KillMode=process
+                [Install]
+                WantedBy=multi-user.target
+    kubelet:
+      extraArgs:
+        - provider-id=metal3://BAREMETALHOST_UUID
+    version: v1.28.3-rc4+rke2r1
+    nodeName: "localhost.localdomain"
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: Metal3MachineTemplate
+metadata:
+  name: flexran-demo2-cluster-controlplane
+  namespace: default
+spec:
+  template:
+    spec:
+      dataTemplate:
+        name: flexran-demo2-cluster-controlplane-template
+      hostSelector:
+        matchLabels:
+          cluster-role: control-plane
+      image:
+        checksum: http://10.168.200.22:8080/eibimage-slemicro55rt-telco.raw.sha256
+        checksumType: sha256
+        format: raw
+        url: http://10.168.200.22:8080/eibimage-slemicro55rt-telco.raw
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: Metal3DataTemplate
+metadata:
+  name: flexran-demo2-cluster-controlplane-template
+  namespace: default
+spec:
+  clusterName: flexran-demo2-cluster
+  metaData:
+    objectNames:
+      - key: name
+        object: machine
+      - key: local-hostname
+        object: machine
+      - key: local_hostname
+        object: machine
+  networkData:
+    links:
+      ethernets:
+        - id: eth0
+          macAddress:
+            fromHostInterface: eth0
+          type: phy
+    networks:
+      ipv4DHCP:
+        - id: eth0
+          link: eth0
