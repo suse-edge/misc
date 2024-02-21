@@ -1,0 +1,29 @@
+apiVersion: 1.0
+image:
+  imageType: RAW
+  arch: x86_64
+  baseImage: SLE-Micro.x86_64-5.5.0-Default-RT-GM.raw
+  outputImageName: eibimage-slemicro55rt-telco.raw
+operatingSystem:
+  rawConfiguration:
+    diskSize: 40G
+  time:
+    timezone: America/New_York
+  kernelArgs:
+    - ignition.platform.id=openstack
+  systemd:
+    disable:
+      - rebootmgr
+  users:
+    - username: root
+      encryptedPassword: ${ROOT_PASSWORD}
+  packages:
+    packageList:
+      - jq
+      - dpdk22
+      - dpdk22-tools
+      - libdpdk-23
+      - pf-bb-config
+    additionalRepos:
+      - url: https://download.opensuse.org/repositories/home:/amorgante/15.5/
+    registrationCode: ${SCC_REGISTRATION_CODE}

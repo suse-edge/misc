@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: node2-example-credentials
+type: Opaque
+data:
+  username: ${BMC_NODE2_USERNAME}
+  password: ${BMC_NODE2_PASSWORD}
+---
+apiVersion: metal3.io/v1alpha1
+kind: BareMetalHost
+metadata:
+  name: node2-example
+  labels:
+    cluster-role: control-plane
+spec:
+  online: true
+  bootMACAddress: ${BMC_NODE2_MAC}
+  bmc:
+    address: ${BMC_NODE2_ADDRESS}
+    disableCertificateVerification: true
+    credentialsName: node2-example-credentials
