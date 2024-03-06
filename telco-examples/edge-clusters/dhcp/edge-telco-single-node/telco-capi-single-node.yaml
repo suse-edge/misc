@@ -46,21 +46,113 @@ spec:
   serverConfig:
     cni: calico
     cniMultusEnable: true
-  preRKE2Commands:
-    - curl -Lk https://raw.githubusercontent.com/k8snetworkplumbingwg/sriov-network-device-plugin/master/deployments/sriovdp-daemonset.yaml > /var/sriovdp-daemonset.yaml
   agentConfig:
     format: ignition
     additionalUserData:
       config: |
         variant: fcos
         version: 1.4.0
+        passwd:
+          users:
+           - name: root
+             password_hash: "$y$j9T$/t4THH10B7esLiIVBROsE.$G1lyxfy/MoFVOrfXSnWAUq70Tf3mjfZBIe18koGOuXB"
         storage:
-          links:
-            - path: /var/sriovdp-daemonset.yaml
-              overwrite: true
-              target: /var/lib/rancher/rke2/server/manifests/sriovdp-daemonset.yaml
-              hard: false
           files:
+            - path: /var/lib/rancher/rke2/server/manifests/sriov-dp-daemonset.yaml
+              overwrite: true
+              contents:
+                inline: |
+                  ---
+                  apiVersion: v1
+                  kind: ServiceAccount
+                  metadata:
+                    name: sriov-device-plugin
+                    namespace: kube-system
+                  ---
+                  apiVersion: apps/v1
+                  kind: DaemonSet
+                  metadata:
+                    name: kube-sriov-device-plugin-amd64
+                    namespace: kube-system
+                    labels:
+                      tier: node
+                      app: sriovdp
+                  spec:
+                    selector:
+                      matchLabels:
+                        name: sriov-device-plugin
+                    template:
+                      metadata:
+                        labels:
+                          name: sriov-device-plugin
+                          tier: node
+                          app: sriovdp
+                      spec:
+                        hostNetwork: true
+                        nodeSelector:
+                          kubernetes.io/arch: amd64
+                        tolerations:
+                        - key: node-role.kubernetes.io/master
+                          operator: Exists
+                          effect: NoSchedule
+                        - key: node-role.kubernetes.io/control-plane
+                          operator: Exists
+                          effect: NoSchedule
+                        serviceAccountName: sriov-device-plugin
+                        containers:
+                        - name: kube-sriovdp
+                          image: rancher/hardened-sriov-network-device-plugin:v3.5.1-build20231009-amd64
+                          imagePullPolicy: IfNotPresent
+                          args:
+                          - --log-dir=sriovdp
+                          - --log-level=10
+                          securityContext:
+                            privileged: true
+                          resources:
+                            requests:
+                              cpu: "250m"
+                              memory: "40Mi"
+                            limits:
+                              cpu: 1
+                              memory: "200Mi"
+                          volumeMounts:
+                          - name: devicesock
+                            mountPath: /var/lib/kubelet/device-plugins
+                            readOnly: false
+                          - name: plugins-registry
+                            mountPath: /var/lib/kubelet/plugins_registry
+                            readOnly: false
+                          - name: log
+                            mountPath: /var/log
+                          - name: config-volume
+                            mountPath: /etc/pcidp
+                          - name: device-info
+                            mountPath: /var/run/k8s.cni.cncf.io/devinfo/dp
+                        volumes:
+                          - name: devicesock
+                            hostPath:
+                              path: /var/lib/kubelet/device-plugins
+                          - name: plugins-registry
+                            hostPath:
+                              path: /var/lib/kubelet/plugins_registry
+                          - name: log
+                            hostPath:
+                              path: /var/log
+                          - name: device-info
+                            hostPath:
+                              path: /var/run/k8s.cni.cncf.io/devinfo/dp
+                              type: DirectoryOrCreate
+                          - name: config-volume
+                            configMap:
+                              name: sriovdp-config
+                              items:
+                              - key: config.json
+                                path: config.json
+              mode: 0644
+              user:
+                name: root
+              group:
+                name: root
             - path: /var/lib/rancher/rke2/server/manifests/configmap-sriov.yaml
               overwrite: true
               contents:
@@ -100,7 +192,7 @@ spec:
                                       "pfNames": ["${SRIOV_NET_INTERFACE}"]
                                   }
                               }
-                          ]
+                            ] 
                       }
               mode: 0644
               user:
@@ -122,7 +214,7 @@ spec:
             - irqaffinity=${NON-ISOLATED_CPU_CORES}
             - isolcpu=${ISOLATED_CPU_CORES}
             - nohz_full=${NON-ISOLATED_CPU_CORES}
-            - rcu_nocbs=$NON-ISOLATED_CPU_CORES
+            - rcu_nocbs=${NON-ISOLATED_CPU_CORES}
             - rcu_nocb_poll
         systemd:
           units:

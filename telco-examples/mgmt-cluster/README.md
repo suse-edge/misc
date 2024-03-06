@@ -20,6 +20,7 @@ You need to modify the following values in the `mgmt-cluster.yaml` file:
 You need to modify the following values in the `custom/files/helm-values-metal3.yaml` file:
 
 - `${MGMT_CLUSTER_IP}` - This is the static IP of your management cluster node. 
+- `${MEDIA_VOLUME_PATH}` - This is the path to the media volume where the images will be stored (e.g. `/home/metal3/bmh-image-cache)
 
 You need to modify the following values in the `network/mgmt-cluster-network.yaml` file:
 
@@ -34,23 +35,6 @@ You need to modify the following folder:
 
 ## Building the Management Cluster Image using EIB
 
-### Prepare and build the EIB image (only once)
-
-``` 
-$ git clone https://github.com/suse-edge/edge-image-builder.git
-$ cd edge-image-builder
-$ git checkout tags/v1.0.0-rc0
-```
-In case you have cgroup version 1 (`podman info | grep cgroup`), you need to launch the following command using sudo:
-```
-$ podman build -t eib:dev .
-```
-
-** Note: see the [EIB documentation](https://github.com/suse-edge/edge-image-builder) for more information on how to build the EIB image.
-
-
-### Build the mgmt-cluster image using EIB
-
 1. Clone this repo and navigate to the `telco-examples/mgmt-cluster/eib` directory.
 
 2. Modify the files described in the prerequisites section.
@@ -59,7 +43,9 @@ $ podman build -t eib:dev .
 
 ```
 $ cd telco-examples/mgmt-cluster
-$ sudo podman run --rm --privileged -it -v ./eib:/eib localhost/eib:dev /bin/eib build -config-file mgmt-cluster.yaml -config-dir /eib -build-dir /eib/_build
+$ podman run --rm --privileged -it -v ./eib:/eib \
+           registry.opensuse.org/isv/suse/edge/edgeimagebuilder/containerfile/suse/edge-image-builder:1.0.0.rc1 \
+           build -config-file mgmt-cluster.yaml -config-dir /eib -build-dir /eib/_build
 ```
 
 ## Deploy the Management Cluster
