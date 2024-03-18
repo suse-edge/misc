@@ -11,6 +11,7 @@ operatingSystem:
     timezone: America/New_York
   kernelArgs:
     - ignition.platform.id=openstack
+    - net.ifnames=1
   systemd:
     disable:
       - rebootmgr
@@ -25,5 +26,5 @@ operatingSystem:
       - libdpdk-23
       - pf-bb-config
     additionalRepos:
-      - url: https://download.opensuse.org/repositories/home:/amorgante/15.5/
-    registrationCode: ${SCC_REGISTRATION_CODE}
+      - url: https://download.opensuse.org/repositories/isv:/SUSE:/Edge:/Telco/SLEMicro5.5/
+    sccRegistrationCode: ${SCC_REGISTRATION_CODE}

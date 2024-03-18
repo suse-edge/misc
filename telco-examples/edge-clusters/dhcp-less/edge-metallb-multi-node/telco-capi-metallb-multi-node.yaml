@@ -45,6 +45,7 @@ spec:
   registrationMethod: "address"
   registrationAddress: ${EDGE_VIP_ADDRESS}
   serverConfig:
+    cni: cilium
     tlsSan:
       - ${EDGE_VIP_ADDRESS}
       - https://${EDGE_VIP_ADDRESS}.sslip.io
@@ -116,9 +117,10 @@ spec:
                     name: metallb
                     namespace: default
                   spec:
-                    repo: https://metallb.github.io/metallb/
+                    repo: https://suse-edge.github.io/metallb
                     chart: metallb
                     targetNamespace: default
+                    version: 0.14.3
                   ---
                   apiVersion: helm.cattle.io/v1
                   kind: HelmChart
@@ -129,6 +131,7 @@ spec:
                     repo: https://suse-edge.github.io/endpoint-copier-operator
                     chart: endpoint-copier-operator
                     targetNamespace: default
+                    version: 0.2.0
             - path: /var/metallb-cr.yaml
               overwrite: true
               contents:
@@ -219,14 +222,3 @@ spec:
         object: machine
       - key: local_hostname
         object: machine
-  networkData:
-    links:
-      ethernets:
-        - id: eth0
-          macAddress:
-            fromHostInterface: eth0
-          type: phy
-    networks:
-      ipv4DHCP:
-        - id: eth0
-          link: eth0

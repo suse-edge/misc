@@ -1,0 +1,51 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: node2-example-credentials
+type: Opaque
+data:
+  username: ${BMC_NODE2_USERNAME}
+  password: ${BMC_NODE2_PASSWORD}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: controlplane-2-networkdata
+type: Opaque
+stringData:
+  networkData: |
+    interfaces:
+    - name: ${CONTROLPLANE2_INTERFACE}
+      type: ethernet
+      state: up
+      mac-address: "${CONTROLPLANE2_MAC}"
+      ipv4:
+        address:
+        - ip:  "${CONTROLPLANE2_IP}"
+          prefix-length: "${CONTROLPLANE2_PREFIX}"
+        enabled: true
+        dhcp: false
+    dns-resolver:
+      config:
+        server:
+        - "${DNS_SERVER}"
+    routes:
+      config:
+      - destination: 0.0.0.0/0
+        next-hop-address: "${CONTROLPLANE2_GATEWAY}"
+        next-hop-interface: ${CONTROLPLANE2_INTERFACE}
+---
+apiVersion: metal3.io/v1alpha1
+kind: BareMetalHost
+metadata:
+  name: node2-example
+  labels:
+    cluster-role: control-plane
+spec:
+  online: true
+  bootMACAddress: ${BMC_NODE2_MAC}
+  bmc:
+    address: ${BMC_NODE2_ADDRESS}
+    disableCertificateVerification: true
+    credentialsName: node2-example-credentials
+  preprovisioningNetworkDataName: controlplane-2-networkdata

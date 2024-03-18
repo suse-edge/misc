@@ -1,0 +1,269 @@
+---
+apiVersion: cluster.x-k8s.io/v1beta1
+kind: Cluster
+metadata:
+  name: single-node-cluster
+  namespace: default
+spec:
+  clusterNetwork:
+    pods:
+      cidrBlocks:
+        - 192.168.0.0/18
+    services:
+      cidrBlocks:
+        - 10.96.0.0/12
+  controlPlaneRef:
+    apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
+    kind: RKE2ControlPlane
+    name: single-node-cluster
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: Metal3Cluster
+    name: single-node-cluster
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: Metal3Cluster
+metadata:
+  name: single-node-cluster
+  namespace: default
+spec:
+  controlPlaneEndpoint:
+    host: ${EDGE_CONTROL_PLANE_IP}
+    port: 6443
+  noCloudProvider: true
+---
+apiVersion: controlplane.cluster.x-k8s.io/v1alpha1
+kind: RKE2ControlPlane
+metadata:
+  name: single-node-cluster
+  namespace: default
+spec:
+  infrastructureRef:
+    apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+    kind: Metal3MachineTemplate
+    name: single-node-cluster-controlplane
+  replicas: 1
+  serverConfig:
+    cni: calico
+    cniMultusEnable: true
+  preRKE2Commands:
+    - modprobe vfio-pci enable_sriov=1 disable_idle_d3=1
+  agentConfig:
+    format: ignition
+    additionalUserData:
+      config: |
+        variant: fcos
+        version: 1.4.0
+        storage:
+          files:
+            - path: /var/lib/rancher/rke2/server/manifests/configmap-sriov-custom-auto.yaml
+              overwrite: true
+              contents:
+                inline: |
+                  apiVersion: v1
+                  kind: ConfigMap
+                  metadata:
+                    name: sriov-custom-auto-config
+                    namespace: kube-system
+                  data:
+                    config.json: |
+                      [
+                         {
+                           "resourceName": "${RESOURCE_NAME1}",
+                           "interface": "${SRIOV-NIC-NAME1}",
+                           "pfname": "${PF_NAME1}",
+                           "driver": "${DRIVER_NAME1}",
+                           "numVFsToCreate": ${NUM_VFS1}
+                         },
+                         {
+                           "resourceName": "${RESOURCE_NAME2}",
+                           "interface": "${SRIOV-NIC-NAME2}",
+                           "pfname": "${PF_NAME2}",
+                           "driver": "${DRIVER_NAME2}",
+                           "numVFsToCreate": ${NUM_VFS2}
+                         }
+                      ]
+              mode: 0644
+              user:
+                name: root
+              group:
+                name: root
+            - path: /var/sriov-auto-filler.sh
+              overwrite: true
+              contents:
+                inline: |
+                  #!/bin/bash 
+                  cat <<- EOF > /var/sriov-networkpolicy-template.yaml
+                  apiVersion: sriovnetwork.openshift.io/v1
+                  kind: SriovNetworkNodePolicy
+                  metadata:
+                    name: atip-RESOURCENAME
+                    namespace: kube-system
+                  spec:
+                    nodeSelector:
+                      feature.node.kubernetes.io/network-sriov.capable: "true"
+                    resourceName: RESOURCENAME
+                    deviceType: DRIVER
+                    numVfs: NUMVF
+                    mtu: 1500
+                    nicSelector:
+                      pfNames: ["PFNAMES"]
+                      deviceID: "DEVICEID"
+                      vendor: "VENDOR"
+                      rootDevices:
+                        - PCIADDRESS
+                  EOF
+  
+                  export KUBECONFIG=/etc/rancher/rke2/rke2.yaml; export KUBECTL=/var/lib/rancher/rke2/bin/kubectl
+                  while [ $(${KUBECTL} --kubeconfig=${KUBECONFIG} get sriovnetworknodestates.sriovnetwork.openshift.io -n kube-system -ojson | jq -r '.items[].status.syncStatus') != "Succeeded" ]; do sleep 1; done
+                  input=$(${KUBECTL} --kubeconfig=${KUBECONFIG} get cm sriov-custom-auto-config -n kube-system -ojson | jq -r '.data."config.json"')
+                  jq -c '.[]' <<< $input | while read i; do
+                    interface=$(echo $i | jq -r '.interface')
+                    pfname=$(echo $i | jq -r '.pfname')
+                    pciaddress=$(${KUBECTL} --kubeconfig=${KUBECONFIG} get sriovnetworknodestates.sriovnetwork.openshift.io -n kube-system -ojson | jq -r ".items[].status.interfaces[]|select(.name==\"$interface\")|.pciAddress")
+                    vendor=$(${KUBECTL} --kubeconfig=${KUBECONFIG} get sriovnetworknodestates.sriovnetwork.openshift.io -n kube-system -ojson | jq -r ".items[].status.interfaces[]|select(.name==\"$interface\")|.vendor")
+                    deviceid=$(${KUBECTL} --kubeconfig=${KUBECONFIG} get sriovnetworknodestates.sriovnetwork.openshift.io -n kube-system -ojson | jq -r ".items[].status.interfaces[]|select(.name==\"$interface\")|.deviceID")
+                    resourceName=$(echo $i | jq -r '.resourceName')
+                    driver=$(echo $i | jq -r '.driver')
+                    sed -e "s/RESOURCENAME/$resourceName/g" \
+                        -e "s/DRIVER/$driver/g" \
+                        -e "s/PFNAMES/$pfname/g" \
+                        -e "s/VENDOR/$vendor/g" \
+                        -e "s/DEVICEID/$deviceid/g" \
+                        -e "s/PCIADDRESS/$pciaddress/g" \
+                        -e "s/NUMVF/$(echo $i | jq -r '.numVFsToCreate')/g" /var/sriov-networkpolicy-template.yaml > /var/lib/rancher/rke2/server/manifests/$resourceName.yaml
+                  done
+              mode: 0755
+              user:
+                name: root
+              group:
+                name: root
+        kernel_arguments:
+          should_exist:
+            - intel_iommu=on
+            - intel_pstate=passive
+            - processor.max_cstate=1
+            - intel_idle.max_cstate=0
+            - iommu=pt
+            - mce=off
+            - hugepagesz=1G hugepages=40
+            - hugepagesz=2M hugepages=0
+            - default_hugepagesz=1G
+            - kthread_cpus=${NON-ISOLATED_CPU_CORES}
+            - irqaffinity=${NON-ISOLATED_CPU_CORES}
+            - isolcpu=${ISOLATED_CPU_CORES}
+            - nohz_full=${NON-ISOLATED_CPU_CORES}
+            - rcu_nocbs=${NON-ISOLATED_CPU_CORES}
+            - rcu_nocb_poll
+        systemd:
+          units:
+            - name: rke2-preinstall.service
+              enabled: true
+              contents: |
+                [Unit]
+                Description=rke2-preinstall
+                Wants=network-online.target
+                Before=rke2-install.service
+                ConditionPathExists=!/run/cluster-api/bootstrap-success.complete
+                [Service]
+                Type=oneshot
+                User=root
+                ExecStartPre=/bin/sh -c "mount -L config-2 /mnt"
+                ExecStart=/bin/sh -c "sed -i \"s/BAREMETALHOST_UUID/$(jq -r .uuid /mnt/openstack/latest/meta_data.json)/\" /etc/rancher/rke2/config.yaml"
+                ExecStart=/bin/sh -c "echo \"node-name: $(jq -r .name /mnt/openstack/latest/meta_data.json)\" >> /etc/rancher/rke2/config.yaml"
+                ExecStartPost=/bin/sh -c "umount /mnt"
+                [Install]
+                WantedBy=multi-user.target
+            - name: cpu-performance.service
+              enabled: true
+              contents: |
+                [Unit]
+                Description=CPU perfomance
+                Wants=network-online.target
+                After=network.target network-online.target
+                [Service]
+                User=root
+                Type=forking
+                TimeoutStartSec=900
+                ExecStart=/bin/sh -c "cpupower frequency-set -g performance; cpupower frequency-set -u ${CPU_FREQUENCY}; cpupower frequency-set -d ${CPU_FREQUENCY}"
+                RemainAfterExit=yes
+                KillMode=process
+                [Install]
+                WantedBy=multi-user.target
+            - name: cpu-partitioning.service
+              enabled: true
+              contents: |
+                [Unit]
+                Description=cpu-partitioning
+                Wants=network-online.target
+                After=network.target network-online.target
+                [Service]
+                Type=oneshot
+                User=root
+                ExecStart=/bin/sh -c "echo isolated_cores=${ISOLATED_CPU_CORES} > /etc/tuned/cpu-partitioning-variables.conf"
+                ExecStartPost=/bin/sh -c "tuned-adm profile cpu-partitioning"
+                ExecStartPost=/bin/sh -c "systemctl enable tuned.service"
+                [Install]
+                WantedBy=multi-user.target
+            - name: sriov-custom-auto-vfs.service
+              enabled: true
+              contents: |
+                [Unit]
+                Description=SRIOV Custom Auto VF Creation
+                Wants=network-online.target  rke2-server.target
+                After=network.target network-online.target rke2-server.target
+                [Service]
+                User=root
+                Type=forking
+                TimeoutStartSec=900
+                ExecStart=/bin/sh -c "curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash"
+                ExecStartPost=/bin/sh -c "helm repo add rancher-charts https://raw.githubusercontent.com/rancher/charts/release-v2.9/"
+                ExecStartPost=/bin/sh -c "while ! /var/lib/rancher/rke2/bin/kubectl --kubeconfig=/etc/rancher/rke2/rke2.yaml wait --for condition=ready nodes --all ; do sleep 2 ; done"
+                ExecStartPost=/bin/sh -c "helm --kubeconfig /etc/rancher/rke2/rke2.yaml install sriov-crd rancher-charts/sriov-crd"
+                ExecStartPost=/bin/sh -c "helm --kubeconfig /etc/rancher/rke2/rke2.yaml install sriov rancher-charts/sriov -n kube-system"
+                ExecStartPost=/bin/sh -c "while [ $(/var/lib/rancher/rke2/bin/kubectl --kubeconfig=/etc/rancher/rke2/rke2.yaml get sriovnetworknodestates.sriovnetwork.openshift.io --ignore-not-found --no-headers -A | wc -l) -eq 0 ]; do sleep 1; done"
+                ExecStartPost=/bin/sh -c "/var/sriov-auto-filler.sh"
+                RemainAfterExit=yes
+                KillMode=process
+                [Install]
+                WantedBy=multi-user.target
+    kubelet:
+      extraArgs:
+        - provider-id=metal3://BAREMETALHOST_UUID
+    version: ${RKE2_VERSION}
+    nodeName: "localhost.localdomain"
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: Metal3MachineTemplate
+metadata:
+  name: single-node-cluster-controlplane
+  namespace: default
+spec:
+  template:
+    spec:
+      dataTemplate:
+        name: single-node-cluster-controlplane-template
+      hostSelector:
+        matchLabels:
+          cluster-role: control-plane
+      image:
+        checksum: http://imagecache.local:8080/eibimage-slemicro55rt-telco.raw.sha256
+        checksumType: sha256
+        format: raw
+        url: http://imagecache.local:8080/eibimage-slemicro55rt-telco.raw
+---
+apiVersion: infrastructure.cluster.x-k8s.io/v1beta1
+kind: Metal3DataTemplate
+metadata:
+  name: single-node-cluster-controlplane-template
+  namespace: default
+spec:
+  clusterName: single-node-cluster
+  metaData:
+    objectNames:
+      - key: name
+        object: machine
+      - key: local-hostname
+        object: machine
+      - key: local_hostname
+        object: machine

@@ -20,33 +20,37 @@ curl -Lk https://github.com/kubernetes-sigs/cluster-api/releases/download/v1.3.5
 chmod +x /usr/local/bin/clusterctl
 curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
-# Wait for cluster to be available
+## Wait for RKE2 cluster to be available
 until [ -f /etc/rancher/rke2/rke2.yaml ]; do sleep 2; done
 # export the kubeconfig using the right kubeconfig path depending on the cluster (k3s or rke2)
 export KUBECONFIG=/etc/rancher/rke2/rke2.yaml
 # Wait for the node to be available, meaning the K8s API is available
 while ! /var/lib/rancher/rke2/bin/kubectl wait --for condition=ready node $(cat /etc/hostname | tr '[:upper:]' '[:lower:]') ; do sleep 2 ; done
 
-helm repo add rancher https://releases.rancher.com/server-charts/latest
+## Add Helm repos
+helm repo add rancher-prime https://charts.rancher.com/server-charts/prime
 helm repo add jetstack https://charts.jetstack.io
 helm repo update
 
 while ! /var/lib/rancher/rke2/bin/kubectl rollout status daemonset -n kube-system rke2-ingress-nginx-controller ; do sleep 2 ; done
+
+## install cert-manager
 helm install cert-manager jetstack/cert-manager \
 	--namespace cert-manager \
         --create-namespace \
         --set installCRDs=true \
 	--version v1.11.1
 
-cd /home/metal3/
-git clone https://github.com/rancher/local-path-provisioner.git
-cd local-path-provisioner/deploy/chart/local-path-provisioner
-helm install local-path-provisioner . -n local-path-storage --create-namespace
+## Local path provisioner
+/var/lib/rancher/rke2/bin/kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/v0.0.26/deploy/local-path-storage.yaml
+until [ $(/var/lib/rancher/rke2/bin/kubectl get sc -o name | wc -l) -ge 1 ]; do sleep 10; done
+/var/lib/rancher/rke2/bin/kubectl patch storageclass local-path -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
 
-## Configure the httpd cache server for images
-podman run -dit --name bmh-image-cache -p 8080:80 -v /home/metal3/bmh-image-cache:/usr/local/apache2/htdocs/ docker.io/library/httpd:2.4
+## Example in case you want to configure the httpd cache server for images
+## podman run -dit --name bmh-image-cache -p 8080:80 -v /home/metal3/bmh-image-cache:/usr/local/apache2/htdocs/ docker.io/library/httpd:2.4
 
-helm install rancher rancher/rancher \
+## install rancher
+helm install rancher rancher-prime/rancher \
 	--namespace cattle-system \
 	--create-namespace \
 	--set hostname=rancher-$(hostname -I | awk '{print $1}').sslip.io \

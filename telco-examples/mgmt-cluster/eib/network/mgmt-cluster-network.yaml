@@ -1,3 +1,5 @@
+## Only for advanced networking configurations (dhcp-less and complex vlan configurations)
+## This is an example of a network configuration for a management cluster
 routes:
   config:
   - destination: 0.0.0.0/0
