@@ -151,10 +151,12 @@ spec:
             - default_hugepagesz=1G
             - kthread_cpus=${NON-ISOLATED_CPU_CORES}
             - irqaffinity=${NON-ISOLATED_CPU_CORES}
-            - isolcpu=${ISOLATED_CPU_CORES}
-            - nohz_full=${NON-ISOLATED_CPU_CORES}
-            - rcu_nocbs=${NON-ISOLATED_CPU_CORES}
+            - isolcpus=${ISOLATED_CPU_CORES}
+            - nohz_full=${ISOLATED_CPU_CORES}
+            - rcu_nocbs=${ISOLATED_CPU_CORES}
             - rcu_nocb_poll
+            - nosoftlockup 
+            - nohz=on
         systemd:
           units:
             - name: rke2-preinstall.service
