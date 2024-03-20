@@ -1,7 +1,3 @@
-providers:
-  - name: "rke2"
-    url: "https://github.com/rancher-sandbox/cluster-api-provider-rke2/releases/v0.2.6/bootstrap-components.yaml"
-    type: "BootstrapProvider"
-  - name: "rke2"
-    url: "https://github.com/rancher-sandbox/cluster-api-provider-rke2/releases/v0.2.6/control-plane-components.yaml"
-    type: "ControlPlaneProvider"
+images:
+  all:
+    repository: registry.opensuse.org/isv/suse/edge/clusterapi/containerfile/suse

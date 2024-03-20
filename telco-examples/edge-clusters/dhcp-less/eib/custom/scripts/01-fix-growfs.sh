@@ -1,4 +1,5 @@
 #!/bin/bash
+# Bugzilla - https://bugzilla.suse.com/show_bug.cgi?id=1217430
 growfs() {
   mnt="$1"
   dev="$(findmnt --fstab --target ${mnt} --evaluate --real --output SOURCE --noheadings)"
