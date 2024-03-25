@@ -219,10 +219,10 @@ spec:
                 Type=forking
                 TimeoutStartSec=900
                 ExecStart=/bin/sh -c "curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash"
-                ExecStartPost=/bin/sh -c "helm repo add rancher-charts https://raw.githubusercontent.com/rancher/charts/release-v2.9/"
+                ExecStartPost=/bin/sh -c "helm repo add suse-edge https://suse-edge.github.io/charts"
                 ExecStartPost=/bin/sh -c "while ! /var/lib/rancher/rke2/bin/kubectl --kubeconfig=/etc/rancher/rke2/rke2.yaml wait --for condition=ready nodes --all ; do sleep 2 ; done"
-                ExecStartPost=/bin/sh -c "helm --kubeconfig /etc/rancher/rke2/rke2.yaml install sriov-crd rancher-charts/sriov-crd"
-                ExecStartPost=/bin/sh -c "helm --kubeconfig /etc/rancher/rke2/rke2.yaml install sriov rancher-charts/sriov -n kube-system"
+                ExecStartPost=/bin/sh -c "helm --kubeconfig /etc/rancher/rke2/rke2.yaml install sriov-crd suse-edge/sriov-crd -n kube-system"
+                ExecStartPost=/bin/sh -c "helm --kubeconfig /etc/rancher/rke2/rke2.yaml install sriov-network-operator suse-edge/sriov-network-operator -n kube-system"
                 ExecStartPost=/bin/sh -c "while [ $(/var/lib/rancher/rke2/bin/kubectl --kubeconfig=/etc/rancher/rke2/rke2.yaml get sriovnetworknodestates.sriovnetwork.openshift.io --ignore-not-found --no-headers -A | wc -l) -eq 0 ]; do sleep 1; done"
                 ExecStartPost=/bin/sh -c "/var/sriov-auto-filler.sh"
                 RemainAfterExit=yes
