@@ -1,4 +1,0 @@
-defaultNamespace: cattle-elemental-system
-helm:
-  chart: elemental-operator
-  repo: https://rancher.github.io/elemental-operator/stable/

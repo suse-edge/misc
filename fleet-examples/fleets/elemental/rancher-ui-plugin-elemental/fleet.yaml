@@ -1,7 +1,0 @@
-defaultNamespace: cattle-ui-plugin-system
-helm:
-  # This needs to be "elemental" otherwise the uiplugin won't work
-  releaseName: elemental
-  # The official one is https://github.com/rancher/ui-plugin-charts but it doesn't have an http endpoint
-  chart: elemental
-  repo: https://rancher.github.io/elemental-ui/
