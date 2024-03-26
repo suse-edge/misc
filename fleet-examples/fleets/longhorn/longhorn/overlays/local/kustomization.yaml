@@ -1,4 +1,0 @@
-resources:
-- longhorn-basic-auth-middleware.yaml
-- longhorn-ui-auth-secret.yaml
-
