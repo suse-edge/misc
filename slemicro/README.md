@@ -51,7 +51,10 @@ K3s or RKE2 and Rancher are optionally installed. Rancher access is configured w
 * `mkisofs`
 * `qemu-img`
 
-NOTE: They can be installed using `brew`. `envsubst` is available via the `gettext` package.
+NOTE: They can be installed using `brew`.
+* `envsubst` is available via the `gettext` package.
+* `mkisofs` is available via the `cdrtools` package.
+* `qemu-img` is available via the `qemu` package.
 
 * [UTM 4.2.2](https://docs.getutm.app/) or higest (required for the scripting part)
 
@@ -149,7 +152,9 @@ ELEMENTAL_CONFIG="$HOME/Downloads/test_registrationURL.yaml"
 EOF
 ```
 
-NOTE: See the [env.example](env.example) file for an always up-to-date list of variables.
+NOTE:
+1. EMAIL and REGCODE must be valid so do not forget to replace them with the real ones.
+2. See the [env.example](env.example) file for an always up-to-date list of variables.
 
 ### Usage
 
