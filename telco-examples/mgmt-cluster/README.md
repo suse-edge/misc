@@ -19,8 +19,7 @@ You need to modify the following values in the `mgmt-cluster.yaml` file:
 
 You need to modify the following values in the `custom/files/helm-values-metal3.yaml` file:
 
-- `${MGMT_CLUSTER_IP}` - This is the static IP of your management cluster node. 
-- `${MEDIA_VOLUME_PATH}` - This is the path to the media volume where the images will be stored (e.g. `/home/metal3/bmh-image-cache)
+- `${MGMT_CLUSTER_IP}` - This is the static IP of your management cluster node.
 
 You need to modify the following values in the `network/mgmt-cluster-network.yaml` file:
 
