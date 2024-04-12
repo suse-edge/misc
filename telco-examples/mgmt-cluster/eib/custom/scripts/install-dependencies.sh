@@ -27,7 +27,7 @@ until [ -f /etc/rancher/rke2/rke2.yaml ]; do sleep 2; done
 # export the kubeconfig using the right kubeconfig path depending on the cluster (k3s or rke2)
 export KUBECONFIG=/etc/rancher/rke2/rke2.yaml
 # Wait for the node to be available, meaning the K8s API is available
-while ! ${KUBECTL} wait --for condition=ready node $(cat /etc/hostname | tr '[:upper:]' '[:lower:]') ; do sleep 2 ; done
+while ! ${KUBECTL} wait --for condition=ready node $(hostname | tr '[:upper:]' '[:lower:]') ; do sleep 2 ; done
 
 ## Add Helm repos
 helm repo add rancher-prime https://charts.rancher.com/server-charts/prime
@@ -73,7 +73,7 @@ if [ \$(${KUBECTL} get pods -n cattle-system -l app=rancher -o name | wc -l) -ge
 	${KUBECTL} delete validatingwebhookconfigurations.admissionregistration.k8s.io validating-webhook-configuration
 	${KUBECTL} wait --for=delete namespace/cattle-provisioning-capi-system --timeout=300s
 fi
-clusterctl init --core "cluster-api:v1.6.0" --infrastructure "metal3:v1.6.0" --bootstrap "rke2:v0.2.6" --control-plane "rke2:v0.2.6" --config /home/metal3/clusterctl.yaml
+clusterctl init --core "cluster-api:v1.6.2" --infrastructure "metal3:v1.6.2" --bootstrap "rke2:v0.2.6" --control-plane "rke2:v0.2.6" --config /home/metal3/clusterctl.yaml
 
 rm -f /etc/systemd/system/mgmt-cluster-installer.service
 EOF

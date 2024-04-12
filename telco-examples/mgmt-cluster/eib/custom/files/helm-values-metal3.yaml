@@ -1,19 +1,9 @@
 global:
   ironicIP: ${MGMT_CLUSTER_IP}
   enable_vmedia_tls: false
-  enable_metal3_media_server: true
-
-metal3-media:
-  service:
-    type: NodePort
-    port: 6280
 
 metal3-ironic:
   global:
     predictableNicNames: "true"
   service:
     type: NodePort
-
-metal3-media:
-  mediaVolume:
-    hostPath: ${MEDIA_VOLUME_PATH}
