@@ -42,9 +42,7 @@ You need to modify the following folder:
 
 ```
 $ cd telco-examples/mgmt-cluster
-$ podman run --rm --privileged -it -v ./eib:/eib \
-           registry.opensuse.org/isv/suse/edge/edgeimagebuilder/containerfile/suse/edge-image-builder:1.0.0.rc1 \
-           build -config-file mgmt-cluster.yaml -config-dir /eib -build-dir /eib/_build
+$ sudo podman run --rm --privileged -it -v ./eib:/eib registry.opensuse.org/isv/suse/edge/edgeimagebuilder/containerfile/suse/edge-image-builder:1.0.0.rc3 build --definition-file mgmt-cluster.yaml
 ```
 
 ## Deploy the Management Cluster
