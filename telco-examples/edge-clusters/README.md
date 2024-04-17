@@ -37,9 +37,7 @@ All the following commands in this section could be executed using any linux lap
 
 ```
 $ cd telco-examples/edge-clusters 
-$ sudo  podman run --rm --privileged -it -v ./eib:/eib \
-               registry.opensuse.org/isv/suse/edge/edgeimagebuilder/containerfile/suse/edge-image-builder:1.0.0.rc1 \
-               eib build -config-file telco-edge-cluster.yaml -config-dir /eib -build-dir /eib/_build
+$ sudo podman run --rm --privileged -it -v ./eib:/eib registry.opensuse.org/isv/suse/edge/edgeimagebuilder/containerfile/suse/edge-image-builder:1.0.0.rc3 build --definition-file telco-edge-cluster.yaml
 ```
 
 ## Deploy the Edge Clusters
