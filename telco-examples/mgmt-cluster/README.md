@@ -6,31 +6,56 @@ This is an example of using Edge Image Builder (EIB) to generate a management cl
 - RKE2
 - CNI plugins (e.g. Multus, Calico)
 - Rancher
-- Static IPs network configuration
+- Static IPs or DHCP network configuration
 - Metal3 and the CAPI provider
 
 ## Prerequisites
+
+- 3 Reserved IPs:
+   - 1 for the API VIP Address
+   - 1 for the Ingress VIP Address
+   - 1 for the Metal3 VIP Address
 
 You need to modify the following values in the `mgmt-cluster.yaml` file:
 
 - `${ROOT_PASSWORD}` - The root password for the management cluster. This could be generated using `openssl passwd -6 PASSWORD` and replacing PASSWORD with the desired password, and then replacing the value in the `mgmt-cluster.yaml` file.
 - `${SCC_REGISTRATION_CODE}` - The registration code for the SUSE Customer Center for the SLE Micro product. This could be obtained from the SUSE Customer Center and replacing the value in the `mgmt-cluster.yaml` file.
 - `${KUBERNETES_VERSION}` - The version of kubernetes to be used in the management cluster (e.g. `v1.25.9+rke2r1`).
+- `${API_HOST}` - The API host for the management cluster (e.g `192.168.122.10.sslip.io`).
+- `${API_VIP}` - The API VIP address for the management cluster (e.g `192.168.122.10`). IMPORTANT: This IP should be reserved for the management cluster.
 
-You need to modify the following values in the `custom/files/helm-values-metal3.yaml` file:
+[IMPORTANT NOTE] - if you want to deploy the management cluster on a HA setup, you need to add more nodes in the `mgmt-cluster.yaml` file creating the corresponding network files in the `network` folder. The node name in `mgmt-cluster.yaml` should match with the filename in the network folder (e.g `hostname: mgmt-cluster1` should match with `network/mgmt-cluster1.yaml`) to define the host network. The VIP address will be configured in the LoadBalancer service for all nodes.
 
-- `${MGMT_CLUSTER_IP}` - This is the static IP of your management cluster node.
-
-You need to modify the following values in the `network/mgmt-cluster-network.yaml` file:
+You need to modify the following values in the `network/${NODE_HOSTNAME}.yaml` file (The ${NODE_HOSTNAME} is the name configured in the previous mgmt-cluster.yaml):
 
 - `${MGMT_GATEWAY}` - This is the gateway IP of your management cluster network.
 - `${MGMT_DNS}` - This is the DNS IP of your management cluster network.
-- `${MGMT_CLUSTER_IP}` - This is the static IP of your management cluster node.
+- `${MGMT_NODE_IP}` - This is the static IP of your management cluster node. This IP is different for each node, and it's also different from any of the VIP Address reserved before for the Load Balancer.
 - `${MGMT_MAC}` - This is the MAC address of your management cluster node.
+
+Inside this file, you can also see some comments to specify the network configuration for the management cluster using a DHCP server.
+
+You need to modify the following values in the `kubernetes/helm/values/metal3.yaml` file:
+
+- `${METAL3_VIP}` - This is the static VIP for the provisioning services of your management cluster node mentioned above.
+
+You need to modify the following values in the `kubernetes/helm/values/rancher.yaml` file:
+
+- `${INGRESS_VIP}` - This is the static INGRESS VIP of your management cluster node mentioned above.
+
+You need to modify the following values in the `kubernetes/manifests/ingress-ippool.yaml` file:
+
+- `${INGRESS_VIP}` - This is the static INGRESS VIP of your management cluster node mentioned above.
+
+You need to modify the following values in the `custom/scripts/99-register.sh` file:
+
+- `${SCC_REGISTRATION_CODE}` - The registration code for the SUSE Customer Center for the SL Micro product. This could be obtained from the SUSE Customer Center and replacing the value in the `99-register.sh` file.
+
+- `${SCC_ACCOUNT_EMAIL}` - The email address for the SUSE Customer Center account. This could be obtained from the SUSE Customer Center and replacing the value in the `99-register.sh` file.
 
 You need to modify the following folder:
 
-- `base-images` - To include inside the `SLE-Micro.x86_64-5.5.0-Default-RT-SelfInstall-GM.install.iso` image downloaded from the SUSE Customer Center.
+- `base-images` - To include inside the `SLE-Micro.x86_64-5.5.0-Default-RT-SelfInstall-GM2.install.iso` image downloaded from the SUSE Customer Center.
 
 ## Building the Management Cluster Image using EIB
 
@@ -42,7 +67,9 @@ You need to modify the following folder:
 
 ```
 $ cd telco-examples/mgmt-cluster
-$ sudo podman run --rm --privileged -it -v ./eib:/eib registry.opensuse.org/isv/suse/edge/edgeimagebuilder/containerfile/suse/edge-image-builder:1.0.0.rc3 build --definition-file mgmt-cluster.yaml
+$ sudo podman run --rm --privileged -it -v $PWD:/eib \
+registry.suse.com/edge/edge-image-builder:1.0.1 \
+build --definition-file mgmt-cluster.yaml
 ```
 
 ## Deploy the Management Cluster

@@ -13,6 +13,78 @@ operatingSystem:
   packages:
     packageList:
     - git
+    - jq
     sccRegistrationCode: ${SCC_REGISTRATION_CODE}
 kubernetes:
   version: ${KUBERNETES_VERSION}
+  helm:
+    charts:
+      - name: cert-manager
+        repositoryName: jetstack
+        version: 1.14.2
+        targetNamespace: cert-manager
+        valuesFile: certmanager.yaml
+        createNamespace: true
+        installationNamespace: kube-system
+      - name: longhorn-crd
+        version: 103.3.0+up1.6.1
+        repositoryName: rancher-charts
+        targetNamespace: longhorn-system
+        createNamespace: true
+        installationNamespace: kube-system
+      - name: longhorn
+        version: 103.3.0+up1.6.1
+        repositoryName: rancher-charts
+        targetNamespace: longhorn-system
+        createNamespace: true
+        installationNamespace: kube-system
+      - name: metal3-chart
+        version: 0.6.5
+        repositoryName: suse-edge-charts
+        targetNamespace: metal3-system
+        createNamespace: true
+        installationNamespace: kube-system
+        valuesFile: metal3.yaml
+      - name: neuvector-crd
+        version: 103.0.3+up2.7.6
+        repositoryName: rancher-charts
+        targetNamespace: neuvector
+        createNamespace: true
+        installationNamespace: kube-system
+        valuesFile: neuvector.yaml
+      - name: neuvector
+        version: 103.0.3+up2.7.6
+        repositoryName: rancher-charts
+        targetNamespace: neuvector
+        createNamespace: true
+        installationNamespace: kube-system
+        valuesFile: neuvector.yaml
+      - name: rancher
+        version: 2.8.3
+        repositoryName: rancher-prime
+        targetNamespace: cattle-system
+        createNamespace: true
+        installationNamespace: kube-system
+        valuesFile: rancher.yaml
+    repositories:
+      - name: jetstack
+        url: https://charts.jetstack.io
+      - name: rancher-charts
+        url: https://charts.rancher.io/
+      - name: suse-edge-charts
+        url: oci://registry.suse.com/edge
+      - name: rancher-prime
+        url: https://charts.rancher.com/server-charts/prime
+    network:
+      apiHost: ${API_HOST}
+      apiVIP: ${API_VIP}
+    nodes:
+      - hostname: mgmt-cluster1
+        initializer: true
+        type: server
+#      - hostname: mgmt-cluster2
+#        initializer: true
+#        type: server
+#      - hostname: mgmt-cluster3
+#        initializer: true
+#        type: server

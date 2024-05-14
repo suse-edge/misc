@@ -1,0 +1,13 @@
+apiVersion: metallb.io/v1beta1
+kind: IPAddressPool
+metadata:
+  name: ingress-ippool
+  namespace: metallb-system
+spec:
+  addresses:
+    - ${INGRESS_VIP}/32
+  serviceAllocation:
+    priority: 100
+    serviceSelectors:
+      - matchExpressions:
+          - {key: app.kubernetes.io/name, operator: In, values: [rke2-ingress-nginx]}
