@@ -1,9 +1,9 @@
 global:
-  ironicIP: ${MGMT_CLUSTER_IP}
+  ironicIP: ${METAL3_VIP}
   enable_vmedia_tls: false
-
 metal3-ironic:
   global:
     predictableNicNames: "true"
-  service:
-    type: NodePort
+  persistence:
+    ironic:
+      size: "5Gi"

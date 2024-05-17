@@ -19,9 +19,21 @@ interfaces:
   mac-address: ${MGMT_MAC}
   ipv4:
     address:
-    - ip: ${MGMT_CLUSTER_IP}
+    - ip: ${MGMT_NODE_IP}
       prefix-length: 24
     dhcp: false
     enabled: true
   ipv6:
     enabled: false
+
+## This is an example of a dhcp network configuration for a management cluster
+## interfaces:
+## - name: eth0
+##   type: ethernet
+##   state: up
+##   mac-address: ${MGMT_MAC}
+##   ipv4:
+##     dhcp: true
+##     enabled: true
+##   ipv6:
+##     enabled: false
