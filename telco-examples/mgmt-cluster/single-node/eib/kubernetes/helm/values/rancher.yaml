@@ -1,0 +1,4 @@
+hostname: rancher-${MGMT_CLUSTER_IP}.sslip.io
+bootstrapPassword: "foobar"
+replicas: 1
+global.cattle.psp.enabled: "false"

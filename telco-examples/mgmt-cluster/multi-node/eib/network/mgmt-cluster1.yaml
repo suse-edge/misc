@@ -19,7 +19,7 @@ interfaces:
   mac-address: ${MGMT_MAC}
   ipv4:
     address:
-    - ip: ${MGMT_NODE_IP}
+    - ip: ${MGMT_NODE1_IP}
       prefix-length: 24
     dhcp: false
     enabled: true
