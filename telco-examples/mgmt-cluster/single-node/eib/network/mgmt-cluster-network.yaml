@@ -1,0 +1,25 @@
+routes:
+  config:
+  - destination: 0.0.0.0/0
+    metric: 100
+    next-hop-address: ${MGMT_GATEWAY}
+    next-hop-interface: eth0
+    table-id: 254
+dns-resolver:
+  config:
+    server:
+    - ${MGMT_DNS}
+    - 8.8.8.8
+interfaces:
+- name: eth0
+  type: ethernet
+  state: up
+  mac-address: ${MGMT_MAC}
+  ipv4:
+    address:
+    - ip: ${MGMT_CLUSTER_IP}
+      prefix-length: 24
+    dhcp: false
+    enabled: true
+  ipv6:
+    enabled: false

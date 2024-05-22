@@ -1,0 +1,39 @@
+## Only for advanced networking configurations (dhcp-less and complex vlan configurations)
+## This is an example of a network configuration for a management cluster
+routes:
+  config:
+  - destination: 0.0.0.0/0
+    metric: 100
+    next-hop-address: ${MGMT_GATEWAY}
+    next-hop-interface: eth0
+    table-id: 254
+dns-resolver:
+  config:
+    server:
+    - ${MGMT_DNS}
+    - 8.8.8.8
+interfaces:
+- name: eth0
+  type: ethernet
+  state: up
+  mac-address: ${MGMT_MAC}
+  ipv4:
+    address:
+    - ip: ${MGMT_NODE3_IP}
+      prefix-length: 24
+    dhcp: false
+    enabled: true
+  ipv6:
+    enabled: false
+
+## This is an example of a dhcp network configuration for a management cluster
+## interfaces:
+## - name: eth0
+##   type: ethernet
+##   state: up
+##   mac-address: ${MGMT_MAC}
+##   ipv4:
+##     dhcp: true
+##     enabled: true
+##   ipv6:
+##     enabled: false

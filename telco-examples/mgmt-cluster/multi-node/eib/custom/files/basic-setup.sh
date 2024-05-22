@@ -16,8 +16,9 @@ export METAL3_CAPISYSTEMNAMESPACE="capi-system"
 export METAL3_RKE2BOOTSTRAPNAMESPACE="rke2-bootstrap-system"
 export METAL3_CAPM3NAMESPACE="capm3-system"
 export METAL3_RKE2CONTROLPLANENAMESPACE="rke2-control-plane-system"
+# Use "false" to avoid creating the ~/.cluster-api/clusterctl.yaml file
+# The upstream one is: registry.opensuse.org/isv/suse/edge/clusterapi/containerfile/suse
 export METAL3_CAPI_IMAGES="registry.suse.com/edge"
-# Or registry.opensuse.org/isv/suse/edge/clusterapi/containerfile/suse for the upstream ones
 
 ###########
 # METALLB #

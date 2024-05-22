@@ -105,13 +105,15 @@ fi
 # Deploy CAPI
 if [ $(${KUBECTL} get pods -n ${METAL3_CAPISYSTEMNAMESPACE} -o name | wc -l) -lt 1 ]; then
 
-  # https://github.com/rancher-sandbox/cluster-api-provider-rke2#setting-up-clusterctl
-  mkdir -p ~/.cluster-api
-  cat <<-EOF > ~/.cluster-api/clusterctl.yaml
-	images:
-	  all:
-	    repository: ${METAL3_CAPI_IMAGES}
-	EOF
+  if [ ${METAL3_CAPI_IMAGES} != "false" ]; then
+    # https://github.com/rancher-sandbox/cluster-api-provider-rke2#setting-up-clusterctl
+    mkdir -p ~/.cluster-api
+    cat <<-EOF > ~/.cluster-api/clusterctl.yaml
+		images:
+		  all:
+		    repository: ${METAL3_CAPI_IMAGES}
+		EOF
+  fi
 
   # Try this command 3 times just in case, stolen from https://stackoverflow.com/a/33354419
   if ! (r=3; while ! clusterctl init \
