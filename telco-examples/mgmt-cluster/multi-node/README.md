@@ -22,7 +22,7 @@ You need to modify the following values in the `mgmt-cluster-multinode.yaml` fil
 
 - `${ROOT_PASSWORD}` - The root password for the management cluster. This could be generated using `openssl passwd -6 PASSWORD` and replacing PASSWORD with the desired password, and then replacing the value in the `mgmt-cluster-multinode.yaml` file.
 - `${SCC_REGISTRATION_CODE}` - The registration code for the SUSE Customer Center for the SLE Micro product. This could be obtained from the SUSE Customer Center and replacing the value in the `mgmt-cluster-multinode.yaml` file.
-- `${KUBERNETES_VERSION}` - The version of kubernetes to be used in the management cluster (e.g. `v1.25.9+rke2r1`).
+- `${KUBERNETES_VERSION}` - The version of kubernetes to be used in the management cluster (e.g. `v1.28.8+rke2r1`).
 - `${API_HOST}` - The API host for the management cluster (e.g `192.168.122.10.sslip.io`).
 - `${API_VIP}` - The API VIP address for the management cluster (e.g `192.168.122.10`). IMPORTANT: This IP should be reserved for the management cluster.
 
@@ -57,7 +57,7 @@ You need to modify the following values in the `custom/scripts/99-register.sh` f
 
 You need to modify the following folder:
 
-- `base-images` - To include inside the `SLE-Micro.x86_64-5.5.0-Default-RT-SelfInstall-GM2.install.iso` image downloaded from the SUSE Customer Center.
+- `base-images` - To include inside the `SLE-Micro.x86_64-5.5.0-Default-SelfInstall-GM2.install.iso` image downloaded from the SUSE Customer Center.
 
 ## Building the Management Cluster Image using EIB
 
