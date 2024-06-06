@@ -19,6 +19,7 @@ stringData:
     - name: ${CONTROLPLANE_INTERFACE}
       type: ethernet
       state: up
+      mtu: 1500
       mac-address: "${CONTROLPLANE_MAC}"
       ipv4:
         address:
