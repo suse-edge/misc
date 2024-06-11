@@ -36,8 +36,10 @@ All the following commands in this section could be executed using any linux lap
 #### Generate the image with our configuration for Telco profile
 
 ```
-$ cd telco-examples/edge-clusters 
-$ sudo podman run --rm --privileged -it -v ./eib:/eib registry.opensuse.org/isv/suse/edge/edgeimagebuilder/containerfile/suse/edge-image-builder:1.0.0.rc3 build --definition-file telco-edge-cluster.yaml
+$ cd telco-examples/edge-clusters
+$ sudo podman run --rm --privileged -it -v $PWD:/eib \
+registry.suse.com/edge/edge-image-builder:1.0.2 \
+build --definition-file telco-edge-cluster.yaml
 ```
 
 ## Deploy the Edge Clusters

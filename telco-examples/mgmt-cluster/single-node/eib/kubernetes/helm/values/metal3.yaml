@@ -1,6 +1,7 @@
 global:
   ironicIP: ${MGMT_CLUSTER_IP}
   enable_vmedia_tls: false
+  additionalTrustedCAs: false
 metal3-ironic:
   global:
     predictableNicNames: "true"
