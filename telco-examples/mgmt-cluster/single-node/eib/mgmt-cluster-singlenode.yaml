@@ -38,7 +38,7 @@ kubernetes:
         createNamespace: true
         installationNamespace: kube-system
       - name: metal3-chart
-        version: 0.6.5
+        version: 0.7.1
         repositoryName: suse-edge-charts
         targetNamespace: metal3-system
         createNamespace: true
@@ -59,7 +59,7 @@ kubernetes:
         installationNamespace: kube-system
         valuesFile: neuvector.yaml
       - name: rancher
-        version: 2.8.3
+        version: 2.8.4
         repositoryName: rancher-prime
         targetNamespace: cattle-system
         createNamespace: true

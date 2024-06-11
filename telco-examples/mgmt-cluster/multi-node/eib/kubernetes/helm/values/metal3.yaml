@@ -1,6 +1,7 @@
 global:
   ironicIP: ${METAL3_VIP}
   enable_vmedia_tls: false
+  additionalTrustedCAs: false
 metal3-ironic:
   global:
     predictableNicNames: "true"
