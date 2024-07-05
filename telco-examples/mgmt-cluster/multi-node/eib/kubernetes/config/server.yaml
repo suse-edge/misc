@@ -1,6 +1,0 @@
-cni:
-  - multus
-  - cilium
-write-kubeconfig-mode: '0644'
-selinux: true
-token: foobar
