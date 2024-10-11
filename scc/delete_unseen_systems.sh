@@ -30,12 +30,14 @@ delete_systems(){
 		HOSTPASS=$(echo ${HOST} | jq -r ".password")
 		LASTSEEN=$(echo ${HOST} | jq -r ".last_seen_at")
 		EPOCH=$(date -d "${LASTSEEN}" +%s)
-		let DIFF=(${TODAY}-${EPOCH})/86400
+		DIFF=$(( (TODAY - EPOCH) / 86400 ))
 		if [ ${DIFF} -gt ${DAYS} ]; then
 			echo "Deleting $((j+1))/${TOTAL} - ${ID}, last seen at ${LASTSEEN}"
 			curl -X 'DELETE' -s 'https://scc.suse.com/connect/systems' \
 				-H 'Accept: application/vnd.scc.suse.com.v4+json' \
 				-u ${HOSTLOGIN}:${HOSTPASS}
+		else
+			echo "Not deleting ${ID}, last seen at ${LASTSEEN}"
 		fi
 	done
 }
