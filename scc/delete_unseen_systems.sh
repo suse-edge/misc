@@ -32,13 +32,15 @@ delete_systems(){
 		EPOCH=$(date -d "${LASTSEEN}" +%s)
 		DIFF=$(( (TODAY - EPOCH) / 86400 ))
 		if [ ${DIFF} -gt ${DAYS} ]; then
-			echo "Deleting $((j+1))/${TOTAL} - ${ID}, last seen at ${LASTSEEN}"
+			echo "$((j+1))/${TOTAL} - Deleting ${ID}, last seen at ${LASTSEEN}"
 			curl -X 'DELETE' -s 'https://scc.suse.com/connect/systems' \
 				-H 'Accept: application/vnd.scc.suse.com.v4+json' \
 				-u ${HOSTLOGIN}:${HOSTPASS}
 		else
-			echo "Not deleting ${ID}, last seen at ${LASTSEEN}"
+			echo "$((j+1))/${TOTAL} - Not deleting ${ID}, last seen at ${LASTSEEN}"
 		fi
+		# Be gentle with the SCC API
+		sleep 1
 	done
 }
 

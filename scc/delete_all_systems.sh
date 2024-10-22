@@ -26,10 +26,12 @@ delete_systems(){
 		HOSTLOGIN=$(echo ${HOST} | jq -r ".login")
 		HOSTPASS=$(echo ${HOST} | jq -r ".password")
 		LASTSEEN=$(echo ${HOST} | jq -r ".last_seen_at")
-		echo "Deleting $((j+1))/${TOTAL} - ${ID}, last seen at ${LASTSEEN}"
+		echo "$((j+1))/${TOTAL} - Deleting ${ID}, last seen at ${LASTSEEN}"
 		curl -X 'DELETE' -s 'https://scc.suse.com/connect/systems' \
 			-H 'Accept: application/vnd.scc.suse.com.v4+json' \
 			-u ${HOSTLOGIN}:${HOSTPASS}
+		# Be gentle with the SCC API
+		sleep 1
 	done
 }
 
