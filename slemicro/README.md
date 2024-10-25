@@ -16,6 +16,8 @@
   - [Prerequisites](#prerequisites)
   - [Enviroment variables](#enviroment-variables)
   - [Usage](#usage)
+  - [Multiple VMs](#multiple-vms)
+  - [Static IPs](#static-ips)
 - [delete\_vm.sh](#delete_vmsh)
   - [Prerequisites](#prerequisites-1)
   - [Enviroment variables](#enviroment-variables-1)
@@ -25,15 +27,19 @@
   - [Enviroment variables](#enviroment-variables-2)
   - [Usage](#usage-2)
 - [get\_ip.sh](#get_ipsh)
-  - [Prerequisites](#prerequisites-2)
-  - [Enviroment variables](#enviroment-variables-2)
-  - [Usage](#usage-2)
-- [getvmsip.sh](#getvmsipsh)
   - [Prerequisites](#prerequisites-3)
+  - [Enviroment variables](#enviroment-variables-3)
   - [Usage](#usage-3)
-- [make\_unattended.sh](#make_unattendedsh)
+- [getvmsip.sh](#getvmsipsh)
   - [Prerequisites](#prerequisites-4)
   - [Usage](#usage-4)
+- [make\_unattended.sh](#make_unattendedsh)
+  - [Prerequisites](#prerequisites-5)
+  - [Usage](#usage-5)
+- [create\_vm\_with\_eib.sh](#create_vm_with_eibsh)
+  - [Prerequisites](#prerequisites-6)
+  - [Enviroment variables](#enviroment-variables-4)
+  - [Usage](#usage-6)
 - [What's next?](#whats-next)
 
 ## create_vm.sh
@@ -365,6 +371,117 @@ Options:
  -i		Path to the original SLE Micro iso file
  -o		(Optional) Path to the tweaked-SLE-Micro-SelfInstall.iso file (./tweaked.iso by default)
  -d		(Optional) Disk device where SLE Micro will be installed (if not provided, the first one that the installer finds)
+```
+## create_vm_with_eib.sh
+
+This script creates a SLE Micro VM on OSX/Linux using UTM (or Libvirt) based on EIB.
+
+The script will output the virtual terminal to connect to (using `screen` if needed) as well as the
+IP that it gets from the OSX DHCPD service.
+
+WARNING: Read the [EIB documentation](https://github.com/suse-edge/edge-image-builder/blob/main/docs/building-images.md) carefully
+to understand the folders and files needed as well as the EIB configuration file.
+
+### Prerequisites
+
+* `podman`
+* `yq`
+* `qemu-img`
+
+NOTE: They can be installed using `brew`.
+* `qemu-img` is available via the `qemu` package.
+
+* [UTM 4.2.2](https://docs.getutm.app/) or higest (required for the scripting part)
+
+* EIB configuration file and folder already created, including the SL Micro raw image.
+  * Download the raw image file from the SUSE website at https://www.suse.com/download/sle-micro/
+  * Select ARM or X86_64 architecture (depending on the Operating system of the host)
+  * Look for the raw file (I.e.- `SL-Micro.aarch64-6.0-Default-GM2.raw`)
+  * Note: SLE Micro RT image can be used as well.
+
+### Enviroment variables
+
+It requires a few enviroment variables to be set to customize it, the bare minimum is just:
+
+```
+# Folder where the VM will be hosted
+VMFOLDER="${HOME}/VMs"
+```
+
+The rest of them can be observed in the script itself.
+
+The variables can be stored in the script basedir as `.env` or in any file and use the `-f path/to/the/variables` flag.
+
+**NOTE**: There is a `vm*` pattern already in the `.gitignore` file so you can conviniently name your VM parameters file as `vm-foobar` and they won't be added to git. 
+
+NOTE:
+1. EIB vars and settings are not verified, EIB will complain by itself if needed.
+2. The EIB config file is currently hardcoded as `eib.yaml`
+3. The EIB folders and files need to be precreated by the user
+
+### Usage
+
+For a simple example like:
+
+```bash
+$ tree --noreport eib 
+eib
+└── smolvm
+    ├── base-images
+    │   └── SL-Micro.aarch64-6.0-Default-GM2.raw
+    └── eib.yaml
+
+$ cat eib/smolvm/eib.yaml
+apiVersion: 1.1
+image:
+  imageType: raw
+  arch: aarch64
+  baseImage: SL-Micro.aarch64-6.0-Default-GM2.raw
+  outputImageName: eib-image.raw
+operatingSystem:
+  rawConfiguration:
+    diskSize: 30G
+  users:
+    - username: root
+      encryptedPassword: $6$ZDh4zjzEsh8K8Svn$DOmn5N2EZZJ1RCys/937tFwID6LfCcCnblp5o0ralWk72a3pmOyTmhsLaHWobBX9mhwVbEBgvKzdudo1jRee3.
+```
+
+NOTE: To create the password, `openssl passwd -6 <password>` can be used. In this example, the password is `foobar`.
+
+```bash
+$ ./create_vm_with_eib.sh -f vm-slmicro6-eib -e eib/smolvm
+Generating image customization components...
+Identifier ................... [SUCCESS]
+Custom Files ................. [SKIPPED]
+Time ......................... [SKIPPED]
+Network ...................... [SKIPPED]
+Groups ....................... [SKIPPED]
+Users ........................ [SUCCESS]
+Proxy ........................ [SKIPPED]
+Rpm .......................... [SKIPPED]
+Os Files ..................... [SKIPPED]
+Systemd ...................... [SKIPPED]
+Fips ......................... [SKIPPED]
+Elemental .................... [SKIPPED]
+Suma ......................... [SKIPPED]
+Embedded Artifact Registry ... [SKIPPED]
+Keymap ....................... [SUCCESS]
+Kubernetes ................... [SKIPPED]
+Certificates ................. [SKIPPED]
+Cleanup ...................... [SUCCESS]
+Building RAW image...
+Kernel Params ................ [SKIPPED]
+Build complete, the image can be found at: eib-image.raw
+VM started. You can connect to the serial terminal as: screen /dev/ttys001
+Waiting for IP: ................
+VM IP: 192.168.206.60
+```
+
+You could also use the `-n` parameter to override the name of the VM to be used:
+
+```bash
+$ ./create_vm_with_eib.sh -h
+Usage: ./create_vm_with_eib.sh [-f <path/to/variables/file>] [-e <path/to/eib/folder>] [-n <vmname>]
 ```
 
 ## What's next?
