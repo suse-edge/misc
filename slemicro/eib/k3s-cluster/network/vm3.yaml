@@ -1,0 +1,10 @@
+interfaces:
+- name: eth0
+  type: ethernet
+  state: up
+  mac-address: 00:00:00:00:00:03
+  ipv4:
+    dhcp: true
+    enabled: true
+  ipv6:
+    enabled: false
