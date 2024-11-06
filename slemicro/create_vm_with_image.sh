@@ -5,20 +5,20 @@ source common.sh
 
 usage(){
 	cat <<-EOF
-	Usage: ${0} [-f <path/to/variables/file>] [-e <path/to/eib/folder>] [-n <vmname>]
+	Usage: ${0} [-f <path/to/variables/file>] [-i <path/to/image.qcow2>] [-n <vmname>]
 	EOF
 }
 
 ENVFILE=""
-EIBFOLDER=""
+IMAGE=""
 
-while getopts 'f:e:n:h' OPTION; do
+while getopts 'f:i:n:h' OPTION; do
 	case "${OPTION}" in
 		f)
 			[ -f "${OPTARG}" ] && ENVFILE="${OPTARG}" || die "Parameters file ${OPTARG} not found" 2
 			;;
-		e)
-			[ -d "${OPTARG}" ] && EIBFOLDER="$(readlink -f ${OPTARG})" || die "EIB folder ${OPTARG} not found" 2
+		i)
+			[ -f "${OPTARG}" ] && IMAGE="$(readlink -f ${OPTARG})" || die "Image ${OPTARG} not found" 2
 			;;
 		n)
 			NAMEOPTION="${OPTARG}"
@@ -33,7 +33,7 @@ while getopts 'f:e:n:h' OPTION; do
 done
 
 [ -z "${ENVFILE}" ] && { usage && die "\"-f <path/to/variables/file>\" required" 2;}
-[ -z "${EIBFOLDER}" ] && { usage && die "\"-e <path/to/eib/folder>\" required" 2;}
+[ -z "${IMAGE}" ] && { usage && die "\"-i <path/to/image.qcow2>\" required" 2;}
 
 set -a
 # Get the env file
@@ -49,7 +49,6 @@ VM_STATIC_GATEWAY=${VM_STATIC_GATEWAY:-"192.168.122.1"}
 VM_STATIC_DNS=${VM_STATIC_DNS:-${VM_STATIC_GATEWAY}}
 EXTRADISKS="${EXTRADISKS:-false}"
 VM_NETWORK=${VM_NETWORK:-default}
-EIB_IMAGE="${EIB_IMAGE:-registry.suse.com/edge/3.1/edge-image-builder:1.1.0}"
 set +a
 
 if [ $(uname -o) == "Darwin" ]; then
@@ -64,46 +63,17 @@ else
 fi
 
 # Check if the commands required exist
-command -v podman > /dev/null 2>&1 || die "podman not found" 2
 command -v qemu-img > /dev/null 2>&1 || die "qemu-img not found" 2
-command -v yq > /dev/null 2>&1 || die "yq not found" 2
-
-# Check if the EIB definition file exist
-[ -f ${EIBFOLDER}/eib.yaml ] || die "EIB definition file \"${EIBFOLDER}/eib.yaml\" not found" 2
-
-# Check if the network config file exist
-[ -f ${EIBFOLDER}/network/${VMNAME}.yaml ] || die "Network definition file for ${VMNAME} \"${EIBFOLDER}/network/${VMNAME}.yaml\" not found" 2
 
 # Check if the image file exist
 [ -f ${VMFOLDER}/${VMNAME}.qcow2 ] && die "Image file ${VMFOLDER}/${VMNAME}.qcow2 already exists" 2
 
 # Check if the MAC address has been set
-[ "${MACADDRESS}" != "null" ] || die "MAC Address needs to be specified" 2
-
-# Check if it matches the EIB definition
-EIBMACADDRESS=$(cat ${EIBFOLDER}/network/${VMNAME}.yaml | yq ".interfaces[0].mac-address")
-[ ${EIBMACADDRESS} == "null" ] && die "Network definition file for ${VMNAME}, \"${EIBFOLDER}/network/${VMNAME}.yaml\", doesn't contain a mac-address" 2
-[ ${EIBMACADDRESS} == "${MACADDRESS}" ] || echo "Warning: Network definition file for ${VMNAME}, \"${EIBFOLDER}/network/${VMNAME}.yaml\", mac-address ${EIBMACADDRESS} is different than the env var ${MACADDRESS}, using the \"${EIBFOLDER}/network/${VMNAME}.yaml\" one"
-
-# Check podman-machine-default specs and warn the user
-PODMANMACHINESPECS=$(podman machine inspect podman-machine-default)
-PODMANMACHINECPU=$(echo ${PODMANMACHINESPECS} | yq ".[0].Resources.CPUs")
-PODMANMACHINEMEMORY=$(echo ${PODMANMACHINESPECS} | yq ".[0].Resources.Memory")
-
-[ ${PODMANMACHINECPU} -lt 4 ] && echo "Warning: Podman machine number of CPUs is too low for the EIB RPM resolution process to work, consider increasing them to at least 4 (see podman machine set --help)"
-[ ${PODMANMACHINEMEMORY} -lt 4096 ] && echo "Warning: Podman machine memory is too low for the EIB RPM resolution process to work, consider increasing it to at least 4096 MB (see podman machine set --help)"
-
-# Do the EIB thing
-podman run --rm -it --privileged -v ${EIBFOLDER}:/eib \
-	${EIB_IMAGE} \
-	build --definition-file eib.yaml
-
-OUTPUTNAME=$(cat ${EIBFOLDER}/eib.yaml | yq .image.outputImageName)
-EIBFILE="${EIBFOLDER}/${OUTPUTNAME}"
+[ "${MACADDRESS}" != "null" ] || die "MAC Address needs to be specified and it should match the one defined on EIB at \"<eibfolder>/network/${VMNAME}.yaml\"" 2
 
 # Create the image file
 mkdir -p ${VMFOLDER}
-qemu-img convert -O qcow2 ${EIBFILE} ${VMFOLDER}/${VMNAME}.qcow2
+qemu-img convert -O qcow2 ${IMAGE} ${VMFOLDER}/${VMNAME}.qcow2
 
 if [ "${EXTRADISKS}" != false ]; then
 	DISKARRAY=(${EXTRADISKS//,/ })
@@ -129,7 +99,7 @@ if [ $(uname -o) == "Darwin" ]; then
 	# If there are not extra disks, this works as well
 	UTMDISKMAPPING="{removable:false, source:rootfs}${UTMEXTRADISKMAPPING}}"
 
-	# Create the VM
+# Create the VM
 	OUTPUT=$(osascript <<-END
 	tell application "UTM"
 		-- specify the RAW file

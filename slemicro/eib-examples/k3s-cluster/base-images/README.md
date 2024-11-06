@@ -1,0 +1,1 @@
+Download SL-Micro.aarch64-6.0-Default-GM2.raw from suse.com and save it here.
