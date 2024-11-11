@@ -3,7 +3,7 @@ image:
   imageType: raw
   arch: aarch64
   baseImage: SL-Micro.aarch64-6.0-Default-GM2.raw
-  outputImageName: k3s-cluster-image.raw
+  outputImageName: rke2-rancher-ingress-image.raw
 operatingSystem:
   rawConfiguration:
     diskSize: 30G
@@ -65,4 +65,4 @@ kubernetes:
         plainHTTP: false
         skipTLSVerify: true
         url: https://charts.jetstack.io
-  version: v1.30.3+k3s1
+  version: v1.30.3+rke2r1
