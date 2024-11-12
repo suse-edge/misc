@@ -1,0 +1,1 @@
+Basic example to deploy an HA RKE2 v1.30.3+rke2r1 cluster based on SL Micro 6.0 with Rancher Prime 2.9.1
