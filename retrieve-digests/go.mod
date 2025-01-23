@@ -1,10 +1,8 @@
 module github.com/suse-edge/misc/retrieve-digests
 
-go 1.23.4
+go 1.21
 
 require oras.land/oras-go/v2 v2.5.0
-
-replace github.com/suse-edge/misc/retrieve-digests/pkg => ./pkg
 
 require (
 	github.com/opencontainers/go-digest v1.0.0 // indirect
