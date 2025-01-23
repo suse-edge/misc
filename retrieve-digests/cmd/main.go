@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 
@@ -22,5 +21,5 @@ func main() {
 		log.Fatalf("Error processing repositories: %v", err)
 	}
 
-	fmt.Printf("Processing complete. Successful fetches: %d, Failed fetches: %d\n", successful, failed)
+	log.Printf("Processing complete. Successful fetches: %d, Failed fetches: %d", successful, failed)
 }

@@ -2,18 +2,22 @@ package pkg
 
 import (
 	"context"
-	"log"
 	"strings"
 )
 
-// RunRetrieveDigests contains the core logic for processing repositories
-func RunRetrieveDigests(project string) (int, int, error) {
-	projectURI := strings.ToLower(project)
-	projectURI = strings.ReplaceAll(projectURI, ":", "/")
+const (
+	registrySuseDe  = "registry.suse.de"
+	registrySuseCom = "registry.suse.com"
+	HeaderImage     = "Image"
+	HeaderTag       = "Tag"
+	HeaderDigest    = "Digest"
+	outputFileDe    = "suse_de.csv"
+	outputFileCom   = "suse_com.csv"
+)
 
-	// Output files
-	outputFileDe := "suse_de.csv"
-	outputFileCom := "suse_com.csv"
+// RunRetrieveDigests contains the core logic for processing repositories
+func RunRetrieveDigests(project string) (successful int, failed int, err error) {
+	projectURI := strings.ReplaceAll(strings.ToLower(project), ":", "/")
 
 	// Create CSV writers
 	writerDe := NewCSVWriter(outputFileDe)
@@ -23,16 +27,16 @@ func RunRetrieveDigests(project string) (int, int, error) {
 	defer writerCom.Close()
 
 	// Write headers to the CSV files
-	writerDe.WriteHeader([]string{"Image", "Tag", "Digest"})
-	writerCom.WriteHeader([]string{"Image", "Tag", "Digest"})
+	writerDe.WriteHeader([]string{HeaderImage, HeaderTag, HeaderDigest})
+	writerCom.WriteHeader([]string{HeaderImage, HeaderTag, HeaderDigest})
 
 	repoFetcher := &ORASRepositoryFetcher{}
 
 	// Process repositories and log the result
-	successful, failed, err := ProcessRepositories(
+	successful, failed, err = ProcessRepositories(
 		context.Background(),
-		"registry.suse.de",
-		"registry.suse.com",
+		registrySuseDe,
+		registrySuseCom,
 		projectURI,
 		projectURI,
 		repoFetcher,
@@ -44,6 +48,5 @@ func RunRetrieveDigests(project string) (int, int, error) {
 		return 0, 0, err
 	}
 
-	log.Printf("Processing complete. Successful fetches: %d, Failed fetches: %d", successful, failed)
 	return successful, failed, nil
 }

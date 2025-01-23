@@ -24,7 +24,7 @@ func ProcessRepositories(ctx context.Context, registry1, registry2, project1, pr
 		// Fetch the latest tag for each image
 		tag, err := repoFetcher.FetchLatestTag(ctx, registry1, image)
 		if err != nil {
-			log.Printf("Failed to fetch tags for image %s: %v", image, err)
+			log.Printf("Failed to fetch tags for image %s (tag: %s): %v", image, tag, err)
 			failed++
 			continue
 		}
@@ -32,17 +32,17 @@ func ProcessRepositories(ctx context.Context, registry1, registry2, project1, pr
 		// Fetch digest for registry.suse.de
 		digestDe, err := repoFetcher.FetchDigest(ctx, registry1, image, tag)
 		if err != nil {
-			log.Printf("Failed to fetch digest for image %s:%s from registry.suse.de: %v", image, tag, err)
+			log.Printf("Failed to fetch digest for image %s (tag: %s) from registry.suse.de: %v", image, tag, err)
 			failed++
 			continue
 		}
-		log.Printf("Successfully fetched digest for %s:%s from registry.suse.de: %s", image, tag, digestDe)
+		log.Printf("Successfully fetched digest for image %s (tag: %s, digest: %s) from registry.suse.de", image, tag, digestDe)
 		successful++
 
 		// Write to the first CSV (suse_de.csv)
 		rowDe := []string{image, tag, digestDe}
 		if err := writer1.WriteRow(rowDe); err != nil {
-			log.Printf("Failed to write to suse_de.csv for image %s: %v", image, err)
+			log.Printf("Failed to write to suse_de.csv for image %s (tag: %s): %v", image, tag, err)
 			failed++
 			continue
 		}
@@ -56,17 +56,17 @@ func ProcessRepositories(ctx context.Context, registry1, registry2, project1, pr
 		// Fetch digest for registry.suse.com
 		digestCom, err := repoFetcher.FetchDigest(ctx, registry2, fmt.Sprintf("edge/%s", stem), tag)
 		if err != nil {
-			log.Printf("Failed to fetch digest for image %s:%s from registry.suse.com: %v", stem, tag, err)
+			log.Printf("Failed to fetch digest for image %s (tag: %s) from registry.suse.com: %v", stem, tag, err)
 			failed++
 			continue
 		}
-		log.Printf("Successfully fetched digest for %s:%s from registry.suse.com: %s", stem, tag, digestCom)
+		log.Printf("Successfully fetched digest for image %s (tag: %s, digest: %s) from registry.suse.com", stem, tag, digestCom)
 		successful++
 
 		// Write to the second CSV (suse_com.csv)
 		rowCom := []string{stem, tag, digestCom}
 		if err := writer2.WriteRow(rowCom); err != nil {
-			log.Printf("Failed to write to suse_com.csv for image %s: %v", stem, err)
+			log.Printf("Failed to write to suse_com.csv for image %s (tag: %s): %v", stem, tag, err)
 			failed++
 			continue
 		}

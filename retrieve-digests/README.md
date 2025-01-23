@@ -4,14 +4,6 @@
 
 This tool is designed to retrieve container image digests between two registries: `registry.suse.de` and `registry.suse.com`. It dynamically fetches repositories and their respective tags from the given project path, retrieves the associated digests, and outputs the results into CSV files for comparison.
 
-## Installation
-
-1. Clone the repository
-2. Build the tool:
-   ```bash
-   go build -o retrieve-digests
-   ```
-
 ## Usage
 
 Run the tool with the project path as an argument:
