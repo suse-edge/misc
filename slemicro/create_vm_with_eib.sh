@@ -49,7 +49,7 @@ VM_STATIC_GATEWAY=${VM_STATIC_GATEWAY:-"192.168.122.1"}
 VM_STATIC_DNS=${VM_STATIC_DNS:-${VM_STATIC_GATEWAY}}
 EXTRADISKS="${EXTRADISKS:-false}"
 VM_NETWORK=${VM_NETWORK:-default}
-EIB_IMAGE="${EIB_IMAGE:-registry.suse.com/edge/3.1/edge-image-builder:1.1.0}"
+EIB_IMAGE="${EIB_IMAGE:-registry.suse.com/edge/3.2/edge-image-builder:1.1.0}"
 set +a
 
 if [ $(uname -o) == "Darwin" ]; then
@@ -72,7 +72,10 @@ command -v yq > /dev/null 2>&1 || die "yq not found" 2
 [ -f ${EIBFOLDER}/eib.yaml ] || die "EIB definition file \"${EIBFOLDER}/eib.yaml\" not found" 2
 
 # Check if the network config file exist
-[ -f ${EIBFOLDER}/network/${VMNAME}.yaml ] || die "Network definition file for ${VMNAME} \"${EIBFOLDER}/network/${VMNAME}.yaml\" not found" 2
+if ! [[ -f "${EIBFOLDER}/network/${VMNAME}.yaml" || -f "${EIBFOLDER}/network/_all.yaml" ]]; then
+	# For some scenarios this may not be needed
+	echo "Warning: Network definition file for ${VMNAME} \"${EIBFOLDER}/network/${VMNAME}.yaml\" nor \"${EIBFOLDER}/network/_all.yaml\" found"
+fi
 
 # Check if the image file exist
 [ -f ${VMFOLDER}/${VMNAME}.qcow2 ] && die "Image file ${VMFOLDER}/${VMNAME}.qcow2 already exists" 2
@@ -81,24 +84,30 @@ command -v yq > /dev/null 2>&1 || die "yq not found" 2
 [ "${MACADDRESS}" != "null" ] || die "MAC Address needs to be specified" 2
 
 # Check if it matches the EIB definition
-EIBMACADDRESS=$(cat ${EIBFOLDER}/network/${VMNAME}.yaml | yq ".interfaces[0].mac-address")
-[ ${EIBMACADDRESS} == "null" ] && die "Network definition file for ${VMNAME}, \"${EIBFOLDER}/network/${VMNAME}.yaml\", doesn't contain a mac-address" 2
-[ ${EIBMACADDRESS} == "${MACADDRESS}" ] || echo "Warning: Network definition file for ${VMNAME}, \"${EIBFOLDER}/network/${VMNAME}.yaml\", mac-address ${EIBMACADDRESS} is different than the env var ${MACADDRESS}, using the \"${EIBFOLDER}/network/${VMNAME}.yaml\" one"
+if [ -f ${EIBFOLDER}/network/${VMNAME}.yaml ]; then
+	EIBMACADDRESS=$(cat ${EIBFOLDER}/network/${VMNAME}.yaml | yq -r ".interfaces[0].mac-address")
+	[ ${EIBMACADDRESS} == "null" ] && die "Network definition file for ${VMNAME}, \"${EIBFOLDER}/network/${VMNAME}.yaml\", doesn't contain a mac-address" 2
+	[ ${EIBMACADDRESS} == "${MACADDRESS}" ] || echo "Warning: Network definition file for ${VMNAME}, \"${EIBFOLDER}/network/${VMNAME}.yaml\", mac-address ${EIBMACADDRESS} is different than the env var ${MACADDRESS}, using the \"${EIBFOLDER}/network/${VMNAME}.yaml\" one"
+fi
+EIBMACADDRESS="${MACADDRESS}"
 
-# Check podman-machine-default specs and warn the user
-PODMANMACHINESPECS=$(podman machine inspect podman-machine-default)
-PODMANMACHINECPU=$(echo ${PODMANMACHINESPECS} | yq ".[0].Resources.CPUs")
-PODMANMACHINEMEMORY=$(echo ${PODMANMACHINESPECS} | yq ".[0].Resources.Memory")
+# Only check podman machine on non linux OSes
+if [ $(uname -o) != "GNU/Linux" ]; then
+	# Check podman-machine-default specs and warn the user
+	PODMANMACHINESPECS=$(podman machine inspect podman-machine-default)
+	PODMANMACHINECPU=$(echo ${PODMANMACHINESPECS} | yq -r ".[0].Resources.CPUs")
+	PODMANMACHINEMEMORY=$(echo ${PODMANMACHINESPECS} | yq -r ".[0].Resources.Memory")
 
-[ ${PODMANMACHINECPU} -lt 4 ] && echo "Warning: Podman machine number of CPUs is too low for the EIB RPM resolution process to work, consider increasing them to at least 4 (see podman machine set --help)"
-[ ${PODMANMACHINEMEMORY} -lt 4096 ] && echo "Warning: Podman machine memory is too low for the EIB RPM resolution process to work, consider increasing it to at least 4096 MB (see podman machine set --help)"
+	[ ${PODMANMACHINECPU} -lt 4 ] && echo "Warning: Podman machine number of CPUs is too low for the EIB RPM resolution process to work, consider increasing them to at least 4 (see podman machine set --help)"
+	[ ${PODMANMACHINEMEMORY} -lt 4096 ] && echo "Warning: Podman machine memory is too low for the EIB RPM resolution process to work, consider increasing it to at least 4096 MB (see podman machine set --help)"
+fi
 
 # Do the EIB thing
 podman run --rm -it --privileged -v ${EIBFOLDER}:/eib \
 	${EIB_IMAGE} \
 	build --definition-file eib.yaml
 
-OUTPUTNAME=$(cat ${EIBFOLDER}/eib.yaml | yq .image.outputImageName)
+OUTPUTNAME=$(cat ${EIBFOLDER}/eib.yaml | yq -r .image.outputImageName)
 EIBFILE="${EIBFOLDER}/${OUTPUTNAME}"
 
 # Create the image file
