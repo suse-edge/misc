@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
-
-source common.sh
+BASEDIR="$(dirname "$0")"
+source ${BASEDIR}/common.sh
 
 usage(){
 	cat <<-EOF
 	Usage: ${0} [-f <path/to/variables/file>] [-n <vmname>]
 	
 	Options:
-	 -f		(Optional) Path to the variables file
+	 -f		Path to the variables file
 	 -n		(Optional) Virtual machine name
 	EOF
 }
@@ -29,6 +29,8 @@ while getopts 'f:n:h' OPTION; do
 			;;
 	esac
 done
+
+[ -z "${ENVFILE}" ] && { usage && die "\"-f <path/to/variables/file>\" required" 2;}
 
 set -a
 # Get the env file

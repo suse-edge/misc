@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
-
-source common.sh
+BASEDIR="$(dirname "$0")"
+source ${BASEDIR}/common.sh
 
 usage(){
 	cat <<-EOF

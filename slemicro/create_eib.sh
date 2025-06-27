@@ -69,9 +69,6 @@ if ! [[ -f "${EIBFOLDER}/network/${VMNAME}.yaml" || -f "${EIBFOLDER}/network/_al
 	echo "Warning: Network definition file for ${VMNAME} \"${EIBFOLDER}/network/${VMNAME}.yaml\" nor \"${EIBFOLDER}/network/_all.yaml\" found"
 fi
 
-# Check if the image file exist
-[ -f ${VMFOLDER}/${VMNAME}.qcow2 ] && die "Image file ${VMFOLDER}/${VMNAME}.qcow2 already exists" 2
-
 # Check if it matches the EIB definition
 if [ -f ${EIBFOLDER}/network/${VMNAME}.yaml ]; then
 	EIBMACADDRESS=$(cat ${EIBFOLDER}/network/${VMNAME}.yaml | yq -r ".interfaces[0].mac-address")
@@ -106,13 +103,5 @@ podman run --rm -it --privileged -v ${EIBFOLDER}:/eib \
 
 OUTPUTNAME=$(cat ${EIBFOLDER}/eib.yaml | yq -r .image.outputImageName)
 IMAGE="${EIBFOLDER}/${OUTPUTNAME}"
-
-create_image_file
-
-create_extra_disks
-
-create_vm
-
-printf "\nVM IP: ${VMIP}\n"
 
 exit 0

@@ -1,0 +1,6 @@
+VMFOLDER="${HOME}/VMs"
+VMNAME="slmicro"
+CPUS="2"
+MEMORY="2048"
+MACADDRESS="00:00:00:01:01:01"
+LIBVIRT_DISK_SETTINGS="bus=virtio,cache=unsafe"
