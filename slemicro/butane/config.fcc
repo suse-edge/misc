@@ -1,6 +1,0 @@
-variant: fcos
-version: 1.4.0
-passwd:
-  users:
-   - name: root
-     password_hash: "$y$j9T$/t4THH10B7esLiIVBROsE.$G1lyxfy/MoFVOrfXSnWAUq70Tf3mjfZBIe18koGOuXB"
