@@ -57,7 +57,7 @@ if [ $(uname -o) == "Darwin" ]; then
 elif [ $(uname -o) == "GNU/Linux" ]; then
 	if virsh list --all --name | grep -q ${VMNAME} ; then
 		[ "$(virsh domstate ${VMNAME} 2>/dev/null)" == "running" ] && virsh destroy ${VMNAME}
-		virsh undefine ${VMNAME}
+		virsh undefine ${VMNAME} --nvram --remove-all-storage
 	else
 		die "${VMNAME} not found" 2
 	fi
@@ -67,7 +67,6 @@ fi
 
 [ -f ${VMFOLDER}/${VMNAME}.raw ] && rm -f ${VMFOLDER}/${VMNAME}.raw
 [ -f ${VMFOLDER}/${VMNAME}.qcow2 ] && rm -f ${VMFOLDER}/${VMNAME}.qcow2
-[ -f ${VMFOLDER}/ignition-and-combustion-${VMNAME}.iso ] && rm -f ${VMFOLDER}/ignition-and-combustion-${VMNAME}.iso
 [ "${EXTRADISKS}" != false ] && rm -f ${VMFOLDER}/${VMNAME}-extra-disk-*.raw
 
 exit 0
