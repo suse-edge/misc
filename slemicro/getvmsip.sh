@@ -1,7 +1,7 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
-
-source common.sh
+BASEDIR="$(dirname "$0")"
+source ${BASEDIR}/common.sh
 
 if [ $(uname -o) == "Darwin" ]; then
 	VMS=$(osascript <<-END
@@ -22,6 +22,7 @@ if [ $(uname -o) == "Darwin" ]; then
 		end tell
 		END
 		)
+		VMMAC=$(echo ${VMMAC} | sed 's/0\([0-9A-Fa-f]\)/\1/g')
 		VMIP=$(grep -i "${VMMAC}" -B1 -m1 /var/db/dhcpd_leases | head -1 | awk -F= '{ print $2 }')
 		echo "${vm} ${VMIP}"
 	done
