@@ -1,0 +1,27 @@
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: vm1-downstream-credentials
+  namespace: default
+type: Opaque
+data:
+  username: REPLACEME(bmc-username)
+  password: REPLACEME(bmc-password)
+---
+apiVersion: metal3.io/v1alpha1
+kind: BareMetalHost
+metadata:
+  name: vm1-downstream
+  namespace: default
+  labels:
+    cluster-role: control-plane
+spec:
+  online: true
+  bootMACAddress: 00:00:00:10:01:01
+  bmc:
+    address: redfish-virtualmedia+https://REPLACEME(sushy-url)/redfish/v1/Systems/vm1-downstream
+    disableCertificateVerification: true
+    credentialsName: vm1-downstream-credentials
+  rootDeviceHints:
+    deviceName: /dev/vda

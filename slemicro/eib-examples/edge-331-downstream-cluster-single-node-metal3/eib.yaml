@@ -1,0 +1,33 @@
+apiVersion: 1.1
+image:
+  imageType: raw
+  arch: x86_64
+  baseImage: REPLACEME(slmicro-base-image-being-built-with-kiwi)
+  outputImageName: 331-downstream-cluster.raw
+operatingSystem:
+  time:
+    timezone: Europe/Madrid
+  kernelArgs:
+    - ignition.platform.id=openstack
+    - net.ifnames=1
+  rawConfiguration:
+    diskSize: 3G
+  packages:
+    packageList:
+      - jq
+      - qemu-guest-agent
+      - openssh-server-config-rootlogin
+    sccRegistrationCode: REPLACEME(scc-registration-code)
+  systemd:
+    disable:
+      - rebootmgr.service
+      - transactional-update.timer
+      - transactional-update-cleanup.timer
+    enable:
+      - qemu-guest-agent
+  users:
+    - username: root
+      createHomeDir: true
+      encryptedPassword: REPLACEME(root-encrypted-password)
+      sshKeys:
+        - ssh-rsa REPLACEME(sshkey)
