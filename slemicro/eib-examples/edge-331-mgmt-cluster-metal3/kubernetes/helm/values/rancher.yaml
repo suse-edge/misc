@@ -1,0 +1,3 @@
+hostname: rancher-REPLACEME(rancher-ip).sslip.io
+bootstrapPassword: "REPLACEME(bootstrappassword)"
+replicas: 1
