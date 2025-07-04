@@ -60,14 +60,21 @@ elif [ $(uname -o) == "GNU/Linux" ]; then
 		[ "$(virsh domstate ${VMNAME} 2>/dev/null)" == "running" ] && virsh destroy ${VMNAME}
 		virsh undefine ${VMNAME} --nvram --remove-all-storage
 	else
-		die "${VMNAME} not found" 2
+		echo "${VMNAME} not found"
 	fi
 else
 	die "Unsupported operating system" 2
 fi
 
-[ -f ${VMFOLDER}/${VMNAME}.raw ] && rm -f ${VMFOLDER}/${VMNAME}.raw
-[ -f ${VMFOLDER}/${VMNAME}.qcow2 ] && rm -f ${VMFOLDER}/${VMNAME}.qcow2
-[ "${EXTRADISKS}" != false ] && rm -f ${VMFOLDER}/${VMNAME}-extra-disk-*.raw
+for ext in raw qcow2; do
+	if [ -f ${VMFOLDER}/${VMNAME}.${ext} ]; then
+		echo "Deleting ${VMFOLDER}/${VMNAME}.${ext}"
+      		rm -f ${VMFOLDER}/${VMNAME}.${ext}
+	fi
+done
+
+if [ "${EXTRADISKS}" != false ]; then 
+	rm -f ${VMFOLDER}/${VMNAME}-extra-disk-*.raw
+fi
 
 exit 0

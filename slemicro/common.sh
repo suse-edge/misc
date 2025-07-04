@@ -21,6 +21,12 @@ check_os(){
 	fi
 }
 
+create_empty_image_file(){
+	SIZE="${1:-20}"
+	mkdir -p ${VMFOLDER}
+	qemu-img create -f qcow2 ${VMFOLDER}/${VMNAME}.qcow2 ${SIZE}G
+}
+
 create_image_file(){
 	# Create the image file
 	mkdir -p ${VMFOLDER}
@@ -38,6 +44,7 @@ create_extra_disks(){
 }
 
 create_vm(){
+	POWERON="${1:-true}"
 	if [ $(uname -o) == "Darwin" ]; then
 	# See if there are extra disks to be created
 	UTMEXTRADISKS=""
@@ -56,7 +63,7 @@ create_vm(){
 	UTMDISKMAPPING="{removable:false, source:rootfs}${UTMEXTRADISKMAPPING}}"
 
 	# Create the VM
-	OUTPUT=$(osascript <<-END
+	VMCREATION=$(osascript <<-END
 	tell application "UTM"
 		-- specify the RAW file
 		set rootfs to POSIX file "${VMFOLDER}/${VMNAME}.qcow2"
@@ -64,30 +71,39 @@ create_vm(){
 		${UTMEXTRADISKS}
 		--- create a new QEMU VM
 		set vm to make new virtual machine with properties {backend:qemu, configuration:{cpu cores:${CPUS}, memory: ${MEMORY}, name:"${VMNAME}", network interfaces:{{hardware:"virtio-net-pci", mode:shared, index:0, address:"${MACADDRESS}", port forwards:{}, host interface:""}}, architecture:"aarch64", drives:${UTMDISKMAPPING}}
-		start vm
-		repeat
-			if status of vm is started then exit repeat
-		end repeat
-		get address of first serial port of vm
 	end tell
 	END
 	)
 
-	echo "VM ${VMNAME} started. You can connect to the serial terminal as: screen ${OUTPUT}"
+	if [ ${POWERON} == "true" ]; then
+		# Create the VM
+		OUTPUT=$(osascript <<-END
+		tell application "UTM"
+			set vm virtual machine named "${VMNAME}"
+			start vm
+			repeat
+				if status of vm is started then exit repeat
+			end repeat
+			get address of first serial port of vm
+		end tell
+		END
+		)
+		echo "VM ${VMNAME} started. You can connect to the serial terminal as: screen ${OUTPUT}"
 
-	VMMAC=$(echo ${MACADDRESS} | sed 's/0\([0-9A-Fa-f]\)/\1/g')
-	timeout=180
-	count=0
-	echo -n "Waiting for IP: "
-	until grep -q -i "${VMMAC}" -B1 -m1 /var/db/dhcpd_leases | head -1 | awk -F= '{ print $2 }'; do
-		count=$((count + 1))
-		if [[ ${count} -ge ${timeout} ]]; then
-			break
-		fi
-		sleep 1
-		echo -n "."
-	done
-	VMIP=$(grep -i "${VMMAC}" -B1 -m1 /var/db/dhcpd_leases | head -1 | awk -F= '{ print $2 }')
+		VMMAC=$(echo ${MACADDRESS} | sed 's/0\([0-9A-Fa-f]\)/\1/g')
+		timeout=180
+		count=0
+		echo -n "Waiting for IP: "
+		until grep -q -i "${VMMAC}" -B1 -m1 /var/db/dhcpd_leases | head -1 | awk -F= '{ print $2 }'; do
+			count=$((count + 1))
+			if [[ ${count} -ge ${timeout} ]]; then
+				break
+			fi
+			sleep 1
+			echo -n "."
+		done
+		VMIP=$(grep -i "${VMMAC}" -B1 -m1 /var/db/dhcpd_leases | head -1 | awk -F= '{ print $2 }')
+	fi
 	elif [ $(uname -o) == "GNU/Linux" ]; then
 		# By default virt-install powers off the VM when rebooted once.
 		# As a workaround, create the VM definition, change the on_reboot behaviour
@@ -110,22 +126,26 @@ create_vm(){
 			--print-xml 1 > ${VIRTFILE}
 		sed -i -e 's#<on_reboot>destroy</on_reboot>#<on_reboot>restart</on_reboot>#g' ${VIRTFILE}
 		virsh define ${VIRTFILE}
-		virsh start ${VMNAME}
 		rm -f ${VIRTFILE}
-		echo "VM ${VMNAME} started. You can connect to the serial terminal as: virsh console ${VMNAME}"
-		echo -n "Waiting for IP..."
-		timeout=180
-		count=0
-		VMIP=""
-		while [ -z "${VMIP}" ]; do
-			sleep 1
-			count=$((count + 1))
-			if [[ ${count} -ge ${timeout} ]]; then
-				break
-			fi
-			echo -n "."
-			VMIP=$(vm_ip ${VMNAME})
-		done
+		
+		if [ ${POWERON} == "true" ]; then
+			virsh start ${VMNAME}
+			echo "VM ${VMNAME} started. You can connect to the serial terminal as: virsh console ${VMNAME}"
+			echo -n "Waiting for IP..."
+			timeout=180
+			count=0
+			VMIP=""
+			while [ -z "${VMIP}" ]; do
+				sleep 1
+				count=$((count + 1))
+				if [[ ${count} -ge ${timeout} ]]; then
+					break
+				fi
+				echo -n "."
+				VMIP=$(vm_ip ${VMNAME})
+			done
+		fi
+
 	else
 		die "VM not deployed. Unsupported operating system" 2
 	fi

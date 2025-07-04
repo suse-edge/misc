@@ -15,32 +15,13 @@
 <!-- vscode-markdown-toc -->
 
 - [create_vm_with_eib.sh](#create_vm_with_eib.sh)
-  - [Prerequisites](#Prerequisites)
-  - [Enviroment variables](#Enviromentvariables)
-  - [Usage](#Usage)
 - [create_vm_with_image.sh](#create_vm_with_image.sh)
-  - [Prerequisites](#Prerequisites-1)
-  - [Enviroment variables](#Enviromentvariables-1)
-  - [Usage](#Usage-1)
 - [create_eib.sh](#create_eib.sh)
-  - [Prerequisites](#Prerequisites-1)
-  - [Enviroment variables](#Enviromentvariables-1)
-  - [Usage](#Usage-1)
+- [create_empty_vm.sh](#create_empty_vm.sh)
 - [delete_vm.sh](#delete_vm.sh)
-  - [Prerequisites](#Prerequisites-1)
-  - [Enviroment variables](#Enviromentvariables-1)
-  - [Usage](#Usage-1)
 - [get_kubeconfig.sh](#get_kubeconfig.sh)
-  - [Prerequisites](#Prerequisites-1)
-  - [Enviroment variables](#Enviromentvariables-1)
-  - [Usage](#Usage-1)
 - [get_ip.sh](#get_ip.sh)
-  - [Prerequisites](#Prerequisites-1)
-  - [Enviroment variables](#Enviromentvariables-1)
-  - [Usage](#Usage-1)
 - [getvmsip.sh](#getvmsip.sh)
-  - [Prerequisites](#Prerequisites-1)
-  - [Usage](#Usage-1)
 - [What's next?](#Whatsnext)
 
 <!-- vscode-markdown-toc-config
@@ -287,6 +268,40 @@ Cleanup ...................... [SUCCESS]
 Building RAW image...
 Kernel Params ................ [SKIPPED]
 Build complete, the image can be found at: 32-mgmt-cluster.raw
+```
+
+## <a name='create_empty_vm.sh'></a>create_empty_vm.sh
+
+This script just creates an empty VM. Then it can be used with Metal3.
+
+### <a name='Prerequisites-1'></a>Prerequisites
+
+- `qemu-img`
+
+NOTE: They can be installed using `brew`.
+
+### <a name='Enviromentvariables-1'></a>Enviroment variables
+
+It requires a few enviroment variables to be set to customize it, the bare minimum is just:
+
+```
+# Folder where the VM will be hosted
+VMFOLDER="${HOME}/VMs"
+MACADDRESS="00:00:00:00:00:00"
+```
+
+The rest of them can be observed in the script itself.
+
+The variables can be stored in the script basedir as `.env` or in any file and use the `-f path/to/the/variables` flag.
+
+**NOTE**: There is a `vm*` pattern already in the `.gitignore` file so you can conviniently name your VM parameters file as `vm-foobar` and they won't be added to git.
+
+### <a name='Usage-1'></a>Usage
+
+For a simple example like:
+
+```bash
+$ ./create_empty_vm.sh -f vm-slmicro62-eib -s 40
 ```
 
 ## <a name='delete_vm.sh'></a>delete_vm.sh
