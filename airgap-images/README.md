@@ -33,3 +33,8 @@ This command will show you the full list images to be included in the EIB defini
 ```
 
 This will show you the list of images to be included in the rancher guide for airgap environments
+
+## How to get the full list of images
+
+Deploy an "connected" environment for mgmt-cluster disabling the 3 lines here: https://github.com/suse-edge/atip/blob/8e70085f70153e3fa9f34f5c33a804184c0b1ae0/telco-examples/mgmt-cluster/single-node/eib/custom/files/metal3.sh#L42-L45
+During the process it will use all images required and then you can use the `./eib-mgmt-cluster-airgap-images.sh` with the full list of images you need for the airgap environment (to be included in the EIB definition file)
