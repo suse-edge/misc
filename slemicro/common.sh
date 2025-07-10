@@ -79,7 +79,7 @@ create_vm(){
 		# Create the VM
 		OUTPUT=$(osascript <<-END
 		tell application "UTM"
-			set vm virtual machine named "${VMNAME}"
+			set vm to virtual machine named "${VMNAME}"
 			start vm
 			repeat
 				if status of vm is started then exit repeat
