@@ -29,7 +29,8 @@ fi
 while ! ${KUBECTL} wait --for condition=ready -n ${METAL3_CHART_TARGETNAMESPACE} $(${KUBECTL} get pods -n ${METAL3_CHART_TARGETNAMESPACE} -l app.kubernetes.io/name=metal3-ironic -o name) --timeout=10s; do sleep 2 ; done
 
 # Get the ironic IP
-IRONICIP=$(${KUBECTL} get cm -n ${METAL3_CHART_TARGETNAMESPACE} ironic-bmo -o jsonpath='{.data.IRONIC_IP}')
+# 3.4 changed the CM name to just _ironic_. The following will get ironic-bmo or just ironic if it fails
+IRONICIP=$(${KUBECTL} get cm -n ${METAL3_CHART_TARGETNAMESPACE} ironic-bmo -o jsonpath='{.data.IRONIC_IP}' 2>/dev/null || ${KUBECTL} get cm -n ${METAL3_CHART_TARGETNAMESPACE} ironic -o jsonpath='{.data.IRONIC_IP}' 2>/dev/null)
 
 # If LoadBalancer, use metallb, else it is NodePort
 if [ $(${KUBECTL} get svc -n ${METAL3_CHART_TARGETNAMESPACE} metal3-metal3-ironic -o jsonpath='{.spec.type}') == "LoadBalancer" ]; then
