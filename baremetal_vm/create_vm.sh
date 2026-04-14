@@ -6,6 +6,7 @@ source ../slemicro/common.sh
 source common.sh
 
 IMG_TO_USE=${IMG_TO_USE:-}
+IMG_TO_USE_CHECKSUM=${IMG_TO_USE_CHECKSUM:-}
 
 while getopts 'f:n:h' OPTION; do
 	case "${OPTION}" in
@@ -80,6 +81,13 @@ mkdir -p bmh-image-cache
 IMG_FILENAME=$(basename ${IMG_TO_USE})
 if [ ! -f bmh-image-cache/${IMG_FILENAME} ]; then
   curl -Lk ${IMG_TO_USE} > bmh-image-cache/${IMG_FILENAME}
+
+  # Require checksum validation to ensure image integrity
+  CHECKSUM_ACTUAL=$(sha256sum "bmh-image-cache/${IMG_FILENAME}" | awk '{print $1}')
+  if [ "${IMG_TO_USE_CHECKSUM}" != "${CHECKSUM_ACTUAL}" ]; then
+      die "download sha256 does not match ${IMG_TO_USE_CHECKSUM}, got ${CHECKSUM_ACTUAL}"
+  fi
+
   pushd bmh-image-cache
   md5sum ${IMG_FILENAME} | tee ${IMG_FILENAME}.md5sum
   popd
