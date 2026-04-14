@@ -146,6 +146,7 @@ Variables can be stored in the script basedir as `.env` or in any file and use t
 * `DISKSIZE` specifies the disk size to configure for the VM
 * `IMG_TO_USE` specifies an image to locally cache and use for provisioning
   * One option is `https://download.opensuse.org/pub/opensuse/distribution/leap/15.4/appliances/openSUSE-Leap-15.4-Minimal-VM.x86_64-OpenStack-Cloud.qcow2`
+* `IMG_TO_USE_CHECKSUM` specifies the expected sha256 checksum for IMG_TO_USE
 
 NOTE: Also see the [env.example](env.example) file for an example config with all options.
 
